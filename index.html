@@ -15,7 +15,6 @@
     <nav class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-2xl font-black text-indigo-400">EFRÎN <span class="text-white">ONE</span></h1>
-            
             <div class="flex items-center space-x-3 space-x-reverse">
                 <button onclick="window.openCartModal()" class="relative p-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition">
                     <i class="fas fa-shopping-cart text-lg"></i>
@@ -32,7 +31,7 @@
     <header class="max-w-7xl mx-auto px-4 my-6 w-full">
         <div class="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-3xl p-6 md:p-8 border border-indigo-500/30 shadow-2xl flex flex-col items-start justify-center">
             <h2 class="text-2xl md:text-4xl font-black mb-3">مرحباً بك في <span class="text-indigo-400">EFRÎN ONE STORE</span></h2>
-            <p class="text-slate-300 text-sm md:text-base mb-4">وجهتك السحابية الأولى للحصول على أفضل الخدمات الرقمية والألعاب بطرق دفع آمنة (USDT - شام كاش).</p>
+            <p class="text-slate-300 text-sm md:text-base mb-4">وجهتك الأولى للخدمات الرقمية والألعاب بطرق دفع آمنة (USDT - شام كاش).</p>
             <button onclick="window.scrollToProducts()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 rounded-xl transition text-sm">تصفح المنتجات الآن</button>
         </div>
     </header>
@@ -55,28 +54,63 @@
         </div>
     </section>
 
-    <!-- Admin Panel -->
+    <!-- ADMIN PANEL (لوحة الأدمن المطورة بالكامل) -->
     <section id="admin-panel" class="max-w-7xl mx-auto px-4 my-6 w-full hidden">
-        <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-6">
-            <h3 class="text-xl font-bold mb-4 text-emerald-400"><i class="fas fa-user-shield ml-2"></i>لوحة تحكم الأدمن</h3>
-            <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
-                <input type="text" id="new-prod-name" placeholder="اسم المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
-                <input type="number" step="0.01" id="new-prod-price" placeholder="السعر ($)" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
-                <input type="url" id="new-prod-image" placeholder="رابط الصورة" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
-                <select id="new-prod-category" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
-                    <option value="الألعاب">الألعاب</option>
-                    <option value="شحن البرامج">شحن البرامج</option>
-                    <option value="شحن الرصيد">شحن الرصيد</option>
-                    <option value="عملات رقمية">عملات رقمية</option>
-                    <option value="اكسسوارات أجهزة">اكسسوارات أجهزة</option>
-                    <option value="أجهزة موبايل">أجهزة موبايل</option>
-                    <option value="خدمات سوفت وير">خدمات سوفت وير</option>
-                    <option value="أرقام لتفعيل الحسابات">أرقام لتفعيل الحسابات</option>
-                    <option value="خدمات متنوعة">خدمات متنوعة</option>
-                    <option value="برامج ربحية">برامج ربحية</option>
-                </select>
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl py-2.5 text-xs transition">إضافة منتج</button>
-            </form>
+        <div class="bg-slate-800 border-2 border-emerald-500 rounded-3xl p-6 shadow-2xl space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                <h3 class="text-xl font-black text-emerald-400"><i class="fas fa-user-shield ml-2"></i>لوحة تحكم الأدمن الشاملة</h3>
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full font-bold">صلاحيات كاملة</span>
+            </div>
+
+            <!-- قسم 1: إضافة منتج -->
+            <div>
+                <h4 class="font-bold text-sm text-indigo-300 mb-3"><i class="fas fa-plus-circle ml-1"></i> إضافة منتج جديد للمتجر</h4>
+                <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <input type="text" id="new-prod-name" placeholder="اسم المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                    <input type="number" step="0.01" id="new-prod-price" placeholder="السعر ($)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                    <input type="url" id="new-prod-image" placeholder="رابط الصورة" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                    <select id="new-prod-category" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white">
+                        <option value="الألعاب">الألعاب</option>
+                        <option value="شحن البرامج">شحن البرامج</option>
+                        <option value="شحن الرصيد">شحن الرصيد</option>
+                        <option value="عملات رقمية">عملات رقمية</option>
+                        <option value="اكسسوارات أجهزة">اكسسوارات أجهزة</option>
+                        <option value="أجهزة موبايل">أجهزة موبايل</option>
+                        <option value="خدمات سوفت وير">خدمات سوفت وير</option>
+                        <option value="أرقام لتفعيل الحسابات">أرقام لتفعيل الحسابات</option>
+                        <option value="خدمات متنوعة">خدمات متنوعة</option>
+                        <option value="برامج ربحية">برامج ربحية</option>
+                    </select>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl py-3 text-xs transition">نشر المنتج</button>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-slate-700">
+                <!-- قسم 2: إدارة الطلبات -->
+                <div>
+                    <h4 class="font-bold text-sm text-indigo-300 mb-3"><i class="fas fa-clipboard-list ml-1"></i> طلبات العملاء الواردة</h4>
+                    <div id="admin-orders-list" class="space-y-2 max-h-60 overflow-y-auto bg-slate-900 p-3 rounded-2xl border border-slate-700 text-xs">
+                        <p class="text-slate-400 text-center py-4">جاري تحميل الطلبات...</p>
+                    </div>
+                </div>
+
+                <!-- قسم 3: إدارة أرصدة المستخدمين وشحنها -->
+                <div>
+                    <h4 class="font-bold text-sm text-indigo-300 mb-3"><i class="fas fa-wallet ml-1"></i> إدارة أرصدة المستخدمين</h4>
+                    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 space-y-3 text-xs">
+                        <div>
+                            <label class="text-slate-400 mb-1 block">البريد الإلكتروني للمستخدم:</label>
+                            <input type="email5" id="admin-target-email" placeholder="user@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 mb-1 block">المبلغ المراد إضافته ($):</label>
+                            <input type="number" step="0.01" id="admin-add-balance" placeholder="مثال: 50" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                        </div>
+                        <button onclick="window.adminUpdateUserBalance()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-xl font-bold transition">شحن رصيد المستخدم يدويًا</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -88,7 +122,7 @@
         </div>
     </main>
 
-    <!-- Profile Modal (شحن الرصيد عبر USDT أو شام كاش) -->
+    <!-- Profile Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-800 border border-slate-700 w-full max-w-lg p-6 rounded-2xl relative">
             <button onclick="window.closeProfileModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
@@ -107,7 +141,6 @@
 
             <div class="mb-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
                 <h4 class="font-bold text-sm text-slate-200 mb-3"><i class="fas fa-wallet ml-1 text-emerald-400"></i> شحن رصيد الحساب</h4>
-                
                 <div class="space-y-3">
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block">اختر طريقة الدفع:</label>
@@ -116,16 +149,11 @@
                             <option value="ShamCash">شام كاش (Sham Cash)</option>
                         </select>
                     </div>
-
                     <div>
                         <input type="number" id="deposit-amount" placeholder="المبلغ المراد شحنه ($)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs">
                     </div>
-
-                    <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200">
-                        <!-- يتم التبديل هنا تلقائياً بناء على طريقة الدفع -->
-                    </div>
-
-                    <button onclick="window.submitDepositRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-xs transition">تأكيد طلب شحن الرصيد</button>
+                    <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200"></div>
+                    <button onclick="window.submitDepositRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-xs transition">إرسال طلب شحن الرصيد للأدمن</button>
                 </div>
             </div>
 
@@ -160,14 +188,13 @@
             <div id="cart-items-container" class="space-y-3 max-h-48 overflow-y-auto mb-4 text-xs">
                 <p class="text-slate-400 text-center py-4">السلة فارغة حالياً.</p>
             </div>
-            
             <div class="space-y-3 mb-4">
                 <div class="flex justify-between items-center border-t border-slate-700 pt-3 text-sm">
                     <span class="font-bold">المجموع:</span>
                     <span id="cart-total-price" class="text-emerald-400 font-black text-lg">$0.00</span>
                 </div>
                 <div>
-                    <label class="text-xs text-slate-400 mb-1 block">طريقة الدفع عند إتمام الطلب:</label>
+                    <label class="text-xs text-slate-400 mb-1 block">طريقة الدفع:</label>
                     <select id="checkout-gateway" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
                         <option value="Balance">الرصيد المتاح في الحساب</option>
                         <option value="USDT">USDT (عملات رقمية)</option>
@@ -175,7 +202,6 @@
                     </select>
                 </div>
             </div>
-
             <button onclick="window.checkout()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 rounded-xl transition text-sm">تأكيد وإتمام الطلب</button>
         </div>
     </div>
@@ -187,7 +213,7 @@
     <!-- Script Logic -->
     <script type="module">
         import { 
-            db, auth, collection, addDoc, onSnapshot, doc, getDoc, setDoc, updateDoc,
+            db, auth, collection, addDoc, deleteDoc, doc, onSnapshot, getDoc, setDoc, updateDoc, getDocs, query, where,
             signInWithEmailAndPassword, createUserWithEmailAndPassword, 
             signOut, onAuthStateChanged 
         } from "./firebase-config.js";
@@ -206,10 +232,9 @@
         window.closeProfileModal = () => document.getElementById('profile-modal').classList.add('hidden');
         window.scrollToProducts = () => document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
 
-        // تعليمات بوابات الدفع
         const gatewayInfo = {
-            "USDT": "عنوان محفظة USDT (TRC20): <br><code class='text-emerald-400 font-mono select-all'>T9zW...YourUSDTWalletAddress...Example</code><br>يرجى إرسال المبلغ ثم مراجعة الإدارة.",
-            "ShamCash": "معرف حساب شام كاش (Sham Cash ID): <br><code class='text-emerald-400 font-mono select-all'>SHAM-CASH-EFRIN-992</code><br>يرجى التحويل وإرسال رقم العملية."
+            "USDT": "عنوان محفظة USDT (TRC20): <br><code class='text-emerald-400 font-mono select-all'>T9zW...YourUSDTWalletAddress...Example</code>",
+            "ShamCash": "معرف حساب شام كاش: <br><code class='text-emerald-400 font-mono select-all'>SHAM-CASH-EFRIN-992</code>"
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -228,8 +253,12 @@
             updateAuthUI();
             const adminPanel = document.getElementById('admin-panel');
             if (user) {
-                if(user.email === ADMIN_EMAIL) adminPanel.classList.remove('hidden');
-                else adminPanel.classList.add('hidden');
+                if(user.email === ADMIN_EMAIL) {
+                    adminPanel.classList.remove('hidden');
+                    loadAdminData();
+                } else {
+                    adminPanel.classList.add('hidden');
+                }
                 
                 const userRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userRef);
@@ -260,7 +289,6 @@
                 return;
             }
             try {
-                // تسجيل طلب الشحن مع طريقة الدفع
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
                     type: 'شحن رصيد',
@@ -270,10 +298,87 @@
                     createdAt: new Date()
                 });
                 document.getElementById('deposit-amount').value = '';
-                alert(`تم إرسال طلب الشحن بنجاح عبر ${gateway} بقيمة $${amount}. سيتم اعتماد الرصيد فور التحقق.`);
+                alert(`تم إرسال طلب الشحن بنجاح عبر ${gateway} بقيمة $${amount}. سيتم اعتماد الرصيد من قبل الإدارة.`);
                 window.closeProfileModal();
             } catch(e) {
                 alert('حدث خطأ: ' + e.message);
+            }
+        }
+
+        // لوحة الأدمن: تحميل الطلبات
+        function loadAdminData() {
+            const ordersContainer = document.getElementById('admin-orders-list');
+            onSnapshot(collection(db, "orders"), (snapshot) => {
+                ordersContainer.innerHTML = '';
+                if(snapshot.empty) {
+                    ordersContainer.innerHTML = '<p class="text-slate-400 text-center py-4">لا توجد طلبات حالياً.</p>';
+                    return;
+                }
+                snapshot.forEach((docSnap) => {
+                    const order = docSnap.data();
+                    const orderId = docSnap.id;
+                    const itemsText = order.items ? order.items.map(i => `${i.name} (×${i.qty})`).join(', ') : order.type || 'خدمة';
+                    
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col space-y-2";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-indigo-400">المستخدم: ${order.userEmail}</p>
+                                <p class="text-slate-300">التفاصيل: ${itemsText}</p>
+                                <p class="text-emerald-400 font-black">المبلغ: $${(order.total || 0).toFixed(2)} | الدفع: ${order.gateway || 'رصيد'}</p>
+                                <p class="text-[10px] text-slate-400">الحالة: <span class="text-amber-400 font-bold">${order.status}</span></p>
+                            </div>
+                            <div class="flex flex-col space-y-1">
+                                <button onclick="window.updateOrderStatus('${orderId}', 'مكتملة')" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1 rounded-lg text-[10px] font-bold">تحديد مكتمل</button>
+                                <button onclick="window.deleteOrder('${orderId}')" class="bg-red-600 hover:bg-red-500 px-2.5 py-1 rounded-lg text-[10px] font-bold">حذف</button>
+                            </div>
+                        </div>
+                    `;
+                    ordersContainer.appendChild(div);
+                });
+            });
+        }
+
+        window.updateOrderStatus = async function(orderId, status) {
+            try {
+                await updateDoc(doc(db, "orders", orderId), { status: status });
+                alert('تم تحديث حالة الطلب بنجاح.');
+            } catch(e) {
+                alert('خطأ: ' + e.message);
+            }
+        }
+
+        window.deleteOrder = async function(orderId) {
+            if(confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+                await deleteDoc(doc(db, "orders", orderId));
+            }
+        }
+
+        window.adminUpdateUserBalance = async function() {
+            const email = document.getElementById('admin-target-email').value;
+            const amountToAdd = parseFloat(document.getElementById('admin-add-balance').value);
+            if(!email || isNaN(amountToAdd)) {
+                alert('يرجى إدخال البريد الإلكتروني والمبلغ بشكل صحيح.');
+                return;
+            }
+            try {
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+                if(querySnapshot.empty) {
+                    alert('لم يتم العثور على مستخدم بهذا البريد في قاعدة البيانات.');
+                    return;
+                }
+                const userDocSnap = querySnapshot.docs[0];
+                const userData = userDocSnap.data();
+                const newBalance = (userData.balance || 0) + amountToAdd;
+
+                await updateDoc(doc(db, "users", userDocSnap.id), { balance: newBalance });
+                document.getElementById('admin-target-email').value = '';
+                document.getElementById('admin-add-balance').value = '';
+                alert(`تم إضافة $${amountToAdd} بنجاح. رصيد المستخدم الجديد: $${newBalance.toFixed(2)}`);
+            } catch(e) {
+                alert('خطأ: ' + e.message);
             }
         }
 
@@ -317,20 +422,35 @@
             filtered.forEach((product) => {
                 const card = document.createElement('div');
                 card.className = "bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between hover:border-indigo-500 transition";
+                
+                let deleteBtnHtml = '';
+                if(currentUser && currentUser.email === ADMIN_EMAIL) {
+                    deleteBtnHtml = `<button onclick="window.deleteProduct('${product.id}')" class="mt-2 w-full bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-1 rounded-lg text-[11px] font-bold transition">حذف المنتج</button>`;
+                }
+
                 card.innerHTML = `
                     <img src="${product.image}" alt="${product.name}" class="w-full h-36 object-cover">
                     <div class="p-3 flex flex-col flex-grow justify-between">
                         <div>
                             <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md">${product.category || 'عام'}</span>
                             <h3 class="font-bold text-sm mt-1 mb-1">${product.name}</h3>
-                            <p class="text-emerald-400 font-black text-base mb-3">$${Number(product.price).toFixed(2)}</p>
+                            <p class="text-emerald-400 font-black text-base mb-2">$${Number(product.price).toFixed(2)}</p>
                         </div>
-                        <button class="add-btn w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-xs transition">أضف للسلة</button>
+                        <div>
+                            <button class="add-btn w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-xs transition">أضف للسلة</button>
+                            ${deleteBtnHtml}
+                        </div>
                     </div>
                 `;
                 card.querySelector('.add-btn').addEventListener('click', () => window.addToCart(product));
                 grid.appendChild(card);
             });
+        }
+
+        window.deleteProduct = async function(id) {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                await deleteDoc(doc(db, "products", id));
+            }
         }
 
         window.handleAddProduct = async function(event) {
@@ -464,14 +584,13 @@
                     const balance = userSnap.exists() ? (userSnap.data().balance || 0) : 0;
 
                     if(balance < total) {
-                        alert('رصيدك المتاح غير كافٍ. يرجى شحن حسابك عبر USDT أو شام كاش من إعدادات الملف الشخصي.');
+                        alert('رصيدك المتاح غير كافٍ. يرجى شحن حسابك عبر USDT أو شام كاش.');
                         window.openProfileModal();
                         return;
                     }
                     await updateDoc(userRef, { balance: balance - total });
                 }
 
-                // تسجيل الطلب في النظام
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
                     items: cart,
@@ -484,11 +603,7 @@
                 cart = [];
                 window.updateCartUI();
                 window.closeCartModal();
-                if(gateway === 'Balance') {
-                    alert('تم إتمام الطلب بنجاح وتم خصم المبلغ من رصيدك!');
-                } else {
-                    alert(`تم استلام طلبك عبر ${gateway} بقيمة $${total.toFixed(2)}. يجدر إتمام التحويل لتسليم الطلب.`);
-                }
+                alert('تم إرسال الطلب بنجاح وسيتم معالجته من قبل الأدمن!');
             } catch (error) {
                 alert('خطأ أثناء إتمام الطلب: ' + error.message);
             }
