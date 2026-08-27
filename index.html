@@ -54,7 +54,7 @@
         </div>
     </section>
 
-    <!-- ADMIN PANEL (لوحة الأدمن المطورة بالكامل) -->
+    <!-- ADMIN PANEL -->
     <section id="admin-panel" class="max-w-7xl mx-auto px-4 my-6 w-full hidden">
         <div class="bg-slate-800 border-2 border-emerald-500 rounded-3xl p-6 shadow-2xl space-y-6">
             <div class="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -94,13 +94,13 @@
                     </div>
                 </div>
 
-                <!-- قسم 3: إدارة أرصدة المستخدمين وشحنها -->
+                <!-- قسم 3: إدارة أرصدة المستخدمين -->
                 <div>
                     <h4 class="font-bold text-sm text-indigo-300 mb-3"><i class="fas fa-wallet ml-1"></i> إدارة أرصدة المستخدمين</h4>
                     <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 space-y-3 text-xs">
                         <div>
                             <label class="text-slate-400 mb-1 block">البريد الإلكتروني للمستخدم:</label>
-                            <input type="email5" id="admin-target-email" placeholder="user@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                            <input type="email" id="admin-target-email" placeholder="user@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
                         </div>
                         <div>
                             <label class="text-slate-400 mb-1 block">المبلغ المراد إضافته ($):</label>
@@ -150,7 +150,7 @@
                         </select>
                     </div>
                     <div>
-                        <input type="number" id="deposit-amount" placeholder="المبلغ المراد شحنه ($)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs">
+                        <input type="number" id="deposit-amount" placeholder="المبلغ المراد شحنه ($)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
                     </div>
                     <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200"></div>
                     <button onclick="window.submitDepositRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-xs transition">إرسال طلب شحن الرصيد للأدمن</button>
@@ -170,8 +170,8 @@
             <button onclick="window.closeAuthModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             <h3 class="text-xl font-bold mb-4 text-center">حساب المستخدم</h3>
             <form onsubmit="window.handleAuth(event)" class="space-y-3">
-                <input type="email" id="auth-email" placeholder="البريد الإلكتروني" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
-                <input type="password" id="auth-password" placeholder="كلمة المرور" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                <input type="email" id="auth-email" placeholder="البريد الإلكتروني" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white">
+                <input type="password" id="auth-password" placeholder="كلمة المرور" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white">
                 <div class="flex space-x-2 space-x-reverse pt-2">
                     <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-bold py-2.5 rounded-xl text-xs transition">دخول</button>
                     <button type="button" onclick="window.handleSignUp()" class="flex-1 bg-slate-700 hover:bg-slate-600 font-bold py-2.5 rounded-xl text-xs transition">تسجيل جديد</button>
@@ -246,6 +246,7 @@
                 });
                 instructionsDiv.innerHTML = gatewayInfo[depositSelect.value];
             }
+            fetchProducts();
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -281,7 +282,10 @@
         }
 
         window.submitDepositRequest = async function() {
-            if(!currentUser) return;
+            if(!currentUser) {
+                alert('يرجى تسجيل الدخول أولاً.');
+                return;
+            }
             const amount = parseFloat(document.getElementById('deposit-amount').value);
             const gateway = document.getElementById('deposit-gateway').value;
             if(!amount || amount <= 0) {
@@ -305,7 +309,6 @@
             }
         }
 
-        // لوحة الأدمن: تحميل الطلبات
         function loadAdminData() {
             const ordersContainer = document.getElementById('admin-orders-list');
             onSnapshot(collection(db, "orders"), (snapshot) => {
@@ -522,94 +525,107 @@
             }
         }
 
+        // --- دوال سلة الشراء وإتمام الطلبات المكتملة ---
         window.addToCart = function(product) {
             const existing = cart.find(item => item.id === product.id);
-            if (existing) existing.qty += 1;
-            else cart.push({ ...product, qty: 1 });
-            window.updateCartUI();
-            alert('تمت الإضافة إلى السلة!');
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCartUI();
+            alert(`تمت إضافة "${product.name}" إلى السلة.`);
         };
 
-        window.updateCartUI = function() {
-            const badge = document.getElementById('cart-badge');
-            badge.innerText = cart.reduce((sum, item) => sum + item.qty, 0);
+        window.removeFromCart = function(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        };
 
+        function updateCartUI() {
+            const badge = document.getElementById('cart-badge');
             const container = document.getElementById('cart-items-container');
-            container.innerHTML = '';
-            let total = 0;
+            const totalPriceEl = document.getElementById('cart-total-price');
+
+            const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            badge.innerText = totalCount;
 
             if (cart.length === 0) {
-                container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">السلة فارغة حالياً.</p>';
-            } else {
-                cart.forEach((item, index) => {
-                    total += item.price * item.qty;
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = "flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-700";
-                    itemDiv.innerHTML = `
-                        <div>
-                            <h4 class="font-bold text-xs">${item.name}</h4>
-                            <p class="text-[10px] text-slate-400">$${item.price} × ${item.qty}</p>
-                        </div>
-                        <button class="remove-btn text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
-                    `;
-                    itemDiv.querySelector('.remove-btn').addEventListener('click', () => window.removeFromCart(index));
-                    container.appendChild(itemDiv);
-                });
+                container.innerHTML = '<p class="text-slate-400 text-center py-4">السلة فارغة حالياً.</p>';
+                totalPriceEl.innerText = '$0.00';
+                return;
             }
-            document.getElementById('cart-total-price').innerText = `$${total.toFixed(2)}`;
-        };
 
-        window.removeFromCart = function(index) {
-            cart.splice(index, 1);
-            window.updateCartUI();
-        };
+            container.innerHTML = '';
+            let totalSum = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                totalSum += itemTotal;
+
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-700";
+                div.innerHTML = `
+                    <div>
+                        <p class="font-bold">${item.name}</p>
+                        <p class="text-emerald-400">$${item.price.toFixed(2)} × ${item.qty}</p>
+                    </div>
+                    <button onclick="window.removeFromCart('${item.id}')" class="text-red-400 hover:text-red-300 p-1"><i class="fas fa-trash"></i></button>
+                `;
+                container.appendChild(div);
+            });
+
+            totalPriceEl.innerText = `$${totalSum.toFixed(2)}`;
+        }
 
         window.checkout = async function() {
-            if(!currentUser) {
-                alert('يجب تسجيل الدخول أولاً.');
+            if (!currentUser) {
+                alert('يجب تسجيل الدخول لإتمام عملية الشراء.');
                 window.openAuthModal();
                 return;
             }
-            if(cart.length === 0) {
-                alert('السلة فارغة!');
+            if (cart.length === 0) {
+                alert('السلة فارغة.');
                 return;
             }
-            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
             const gateway = document.getElementById('checkout-gateway').value;
-            
+            const totalSum = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
             try {
                 if (gateway === 'Balance') {
                     const userRef = doc(db, "users", currentUser.uid);
                     const userSnap = await getDoc(userRef);
-                    const balance = userSnap.exists() ? (userSnap.data().balance || 0) : 0;
+                    const userData = userSnap.data();
+                    const currentBalance = userData.balance || 0;
 
-                    if(balance < total) {
-                        alert('رصيدك المتاح غير كافٍ. يرجى شحن حسابك عبر USDT أو شام كاش.');
-                        window.openProfileModal();
+                    if (currentBalance < totalSum) {
+                        alert('رصيدك الحالي غير كافي لإتمام الشراء. يرجى شحن رصيدك.');
                         return;
                     }
-                    await updateDoc(userRef, { balance: balance - total });
+
+                    // خصم المبلغ من رصيد المستخدم
+                    await updateDoc(userRef, { balance: currentBalance - totalSum });
                 }
 
+                // حفظ الطلب في قاعدة البيانات
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
                     items: cart,
-                    total: total,
+                    total: totalSum,
                     gateway: gateway,
-                    status: gateway === 'Balance' ? 'مكتملة' : `قيد المراجعة (${gateway})`,
+                    status: 'قيد التنفيذ',
                     createdAt: new Date()
                 });
 
                 cart = [];
-                window.updateCartUI();
+                updateCartUI();
                 window.closeCartModal();
-                alert('تم إرسال الطلب بنجاح وسيتم معالجته من قبل الأدمن!');
-            } catch (error) {
-                alert('خطأ أثناء إتمام الطلب: ' + error.message);
+                alert('تم تقديم طلبك بنجاح! سيتم معالجته قريباً.');
+            } catch (e) {
+                alert('حدث خطأ أثناء إتمام الطلب: ' + e.message);
             }
         };
-
-        fetchProducts();
     </script>
 </body>
 </html>
