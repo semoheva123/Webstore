@@ -11,6 +11,9 @@
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between">
 
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-5 left-5 z-50 flex flex-col space-y-2"></div>
+
     <!-- Navbar -->
     <nav class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -37,6 +40,14 @@
         </div>
     </header>
 
+    <!-- Search Bar -->
+    <section class="max-w-7xl mx-auto px-4 mb-4 w-full">
+        <div class="relative">
+            <input type="text" id="search-input" placeholder="ابحث عن منتج مرغوب..." class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 pr-11 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+            <i class="fas fa-search absolute top-3.5 right-4 text-slate-400 text-sm"></i>
+        </div>
+    </section>
+
     <!-- Categories Bar -->
     <section class="max-w-7xl mx-auto px-4 mb-6 w-full">
         <h3 class="text-lg font-bold mb-3 text-indigo-300">الأقسام السحابية</h3>
@@ -57,9 +68,9 @@
 
     <!-- Admin Panel -->
     <section id="admin-panel" class="max-w-7xl mx-auto px-4 my-6 w-full hidden">
-        <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-6">
-            <h3 class="text-xl font-bold mb-4 text-emerald-400"><i class="fas fa-user-shield ml-2"></i>لوحة تحكم الأدمن</h3>
-            <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+        <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-6 mb-6">
+            <h3 class="text-xl font-bold mb-4 text-emerald-400"><i class="fas fa-user-shield ml-2"></i>لوحة تحكم الأدمن - إضافة منتج</h3>
+            <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
                 <input type="text" id="new-prod-name" placeholder="اسم المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
                 <input type="number" step="0.01" id="new-prod-price" placeholder="السعر ($)" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
                 <input type="url" id="new-prod-image" placeholder="رابط الصورة" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
@@ -78,6 +89,14 @@
                 <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl py-2.5 text-xs transition">إضافة منتج</button>
             </form>
         </div>
+
+        <!-- Admin Orders Management -->
+        <div class="bg-slate-800 border border-indigo-500/50 rounded-2xl p-6">
+            <h3 class="text-lg font-bold mb-4 text-indigo-300"><i class="fas fa-clipboard-list ml-2"></i>طلبات العملاء وعمليات الشحن الواردة</h3>
+            <div id="admin-orders-container" class="space-y-3 max-h-60 overflow-y-auto text-xs">
+                <p class="text-slate-400 text-center py-4">جاري تحميل الطلبات...</p>
+            </div>
+        </div>
     </section>
 
     <!-- Products Grid -->
@@ -88,9 +107,9 @@
         </div>
     </main>
 
-    <!-- Profile Modal (شحن الرصيد عبر USDT أو شام كاش) -->
+    <!-- Profile Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg p-6 rounded-2xl relative">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg p-6 rounded-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="window.closeProfileModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             <h3 class="text-xl font-bold mb-4 text-indigo-400"><i class="fas fa-user-gear ml-2"></i>إعدادات الحساب وشحن الرصيد</h3>
             
@@ -107,7 +126,6 @@
 
             <div class="mb-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
                 <h4 class="font-bold text-sm text-slate-200 mb-3"><i class="fas fa-wallet ml-1 text-emerald-400"></i> شحن رصيد الحساب</h4>
-                
                 <div class="space-y-3">
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block">اختر طريقة الدفع:</label>
@@ -116,16 +134,19 @@
                             <option value="ShamCash">شام كاش (Sham Cash)</option>
                         </select>
                     </div>
-
                     <div>
                         <input type="number" id="deposit-amount" placeholder="المبلغ المراد شحنه ($)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs">
                     </div>
-
-                    <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200">
-                        <!-- يتم التبديل هنا تلقائياً بناء على طريقة الدفع -->
-                    </div>
-
+                    <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200"></div>
                     <button onclick="window.submitDepositRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-xs transition">تأكيد طلب شحن الرصيد</button>
+                </div>
+            </div>
+
+            <!-- User Orders History Section -->
+            <div class="mb-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
+                <h4 class="font-bold text-sm text-slate-200 mb-3"><i class="fas fa-history ml-1 text-indigo-400"></i> سجل طلباتي ومعلومات التسليم الرقمي</h4>
+                <div id="user-orders-history" class="space-y-2 max-h-40 overflow-y-auto text-xs">
+                    <p class="text-slate-400 text-center py-2">لا توجد طلبات سابقة.</p>
                 </div>
             </div>
 
@@ -187,7 +208,7 @@
     <!-- Script Logic -->
     <script type="module">
         import { 
-            db, auth, collection, addDoc, onSnapshot, doc, getDoc, setDoc, updateDoc,
+            db, auth, collection, addDoc, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc,
             signInWithEmailAndPassword, createUserWithEmailAndPassword, 
             signOut, onAuthStateChanged 
         } from "./firebase-config.js";
@@ -196,17 +217,32 @@
         let cart = [];
         let currentUser = null;
         let currentSelectedCategory = 'all';
+        let searchQuery = '';
         let allProductsCache = [];
+        let allOrdersCache = [];
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl text-xs font-bold text-white shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center space-x-2 space-x-reverse ${type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-indigo-600'}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} ml-1"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
         window.openCartModal = () => document.getElementById('cart-modal').classList.remove('hidden');
         window.closeCartModal = () => document.getElementById('cart-modal').classList.add('hidden');
         window.openAuthModal = () => document.getElementById('auth-modal').classList.remove('hidden');
         window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
-        window.openProfileModal = () => { document.getElementById('profile-modal').classList.remove('hidden'); loadUserData(); }
+        window.openProfileModal = () => { document.getElementById('profile-modal').classList.remove('hidden'); loadUserData(); loadUserOrders(); }
         window.closeProfileModal = () => document.getElementById('profile-modal').classList.add('hidden');
         window.scrollToProducts = () => document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
 
-        // تعليمات بوابات الدفع
         const gatewayInfo = {
             "USDT": "عنوان محفظة USDT (TRC20): <br><code class='text-emerald-400 font-mono select-all'>T9zW...YourUSDTWalletAddress...Example</code><br>يرجى إرسال المبلغ ثم مراجعة الإدارة.",
             "ShamCash": "معرف حساب شام كاش (Sham Cash ID): <br><code class='text-emerald-400 font-mono select-all'>SHAM-CASH-EFRIN-992</code><br>يرجى التحويل وإرسال رقم العملية."
@@ -221,6 +257,14 @@
                 });
                 instructionsDiv.innerHTML = gatewayInfo[depositSelect.value];
             }
+
+            const searchInput = document.getElementById('search-input');
+            if(searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    searchQuery = e.target.value.trim().toLowerCase();
+                    renderProducts();
+                });
+            }
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -228,8 +272,12 @@
             updateAuthUI();
             const adminPanel = document.getElementById('admin-panel');
             if (user) {
-                if(user.email === ADMIN_EMAIL) adminPanel.classList.remove('hidden');
-                else adminPanel.classList.add('hidden');
+                if(user.email === ADMIN_EMAIL) {
+                    adminPanel.classList.remove('hidden');
+                    fetchOrdersForAdmin();
+                } else {
+                    adminPanel.classList.add('hidden');
+                }
                 
                 const userRef = doc(db, "users", user.uid);
                 const userSnap = await getDoc(userRef);
@@ -251,18 +299,45 @@
             }
         }
 
+        async function loadUserOrders() {
+            if(!currentUser) return;
+            const container = document.getElementById('user-orders-history');
+            container.innerHTML = '<p class="text-slate-400 text-center py-2">جاري تحميل طلباتك...</p>';
+            
+            const userOrders = allOrdersCache.filter(o => o.userEmail === currentUser.email);
+            if(userOrders.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-2">لا توجد طلبات سابقة.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            userOrders.forEach(order => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center";
+                div.innerHTML = `
+                    <div class="space-y-1">
+                        <p class="font-bold text-indigo-300">${order.type === 'شحن رصيد' ? 'شحن رصيد' : 'طلب منتجات'}</p>
+                        <p class="text-[10px] text-slate-400">المبلغ: $${Number(order.total).toFixed(2)} | الطريقة: ${order.gateway || 'رصيد'}</p>
+                        ${order.deliveryInfo ? `<div class="text-[11px] text-emerald-300 bg-emerald-950/60 p-2 rounded border border-emerald-500/30 font-mono mt-1"><strong>بيانات التسليم/الكود:</strong> ${order.deliveryInfo}</div>` : ''}
+                    </div>
+                    <span class="px-2.5 py-1 rounded text-[10px] font-bold ${order.status === 'مكتملة' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${order.status}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
         window.submitDepositRequest = async function() {
             if(!currentUser) return;
             const amount = parseFloat(document.getElementById('deposit-amount').value);
             const gateway = document.getElementById('deposit-gateway').value;
             if(!amount || amount <= 0) {
-                alert('يرجى إدخال مبلغ شحن صحيح.');
+                showToast('يرجى إدخال مبلغ شحن صحيح.', 'error');
                 return;
             }
             try {
-                // تسجيل طلب الشحن مع طريقة الدفع
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
+                    userId: currentUser.uid,
                     type: 'شحن رصيد',
                     gateway: gateway,
                     total: amount,
@@ -270,10 +345,10 @@
                     createdAt: new Date()
                 });
                 document.getElementById('deposit-amount').value = '';
-                alert(`تم إرسال طلب الشحن بنجاح عبر ${gateway} بقيمة $${amount}. سيتم اعتماد الرصيد فور التحقق.`);
+                showToast(`تم إرسال طلب الشحن بنجاح عبر ${gateway} بقيمة $${amount}.`);
                 window.closeProfileModal();
             } catch(e) {
-                alert('حدث خطأ: ' + e.message);
+                showToast('حدث خطأ: ' + e.message, 'error');
             }
         }
 
@@ -301,16 +376,104 @@
             });
         }
 
+        function fetchOrdersForAdmin() {
+            onSnapshot(collection(db, "orders"), (snapshot) => {
+                allOrdersCache = [];
+                snapshot.forEach((docSnap) => {
+                    allOrdersCache.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderAdminOrders();
+            });
+        }
+
+        function renderAdminOrders() {
+            const container = document.getElementById('admin-orders-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            if(allOrdersCache.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-4">لا توجد طلبات واردة حالياً.</p>';
+                return;
+            }
+
+            allOrdersCache.forEach((order) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-900 p-3 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-2";
+                
+                let detailsText = order.type === 'شحن رصيد' ? `شحن رصيد بقيمة $${order.total}` : `شراء منتجات بقيمة $${order.total}`;
+                
+                div.innerHTML = `
+                    <div>
+                        <p class="font-bold text-indigo-300">${order.userEmail} <span class="text-slate-400 font-normal">(${order.gateway || 'رصيد'})</span></p>
+                        <p class="text-[11px] text-slate-300">${detailsText}</p>
+                        ${order.deliveryInfo ? `<p class="text-[10px] text-emerald-400">التسليم: ${order.deliveryInfo}</p>` : ''}
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${order.status === 'مكتملة' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${order.status}</span>
+                    </div>
+                    <div class="flex space-x-1 space-x-reverse">
+                        ${order.status !== 'مكتملة' ? `<button onclick="window.approveOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-bold transition">قبول وتسليم</button>` : ''}
+                        <button onclick="window.deleteOrder('${order.id}')" class="bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">حذف</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Updated Admin Approval with Digital Delivery Input Prompt
+        window.approveOrder = async function(orderId) {
+            try {
+                const order = allOrdersCache.find(o => o.id === orderId);
+                if(!order) return;
+
+                let deliveryInfo = "";
+                if (order.type !== 'شحن رصيد') {
+                    deliveryInfo = prompt("أدخل بيانات التسليم الرقمية (كود التفعيل، بيانات الحساب، أو رابط التحميل):", "تم إرسال تفاصيل طلبك بنجاح.");
+                    if (deliveryInfo === null) return; // cancelled
+                } else {
+                    deliveryInfo = "تم شحن الرصيد بنجاح إلى حسابك.";
+                }
+
+                if(order.type === 'شحن رصيد' && order.userId) {
+                    const userRef = doc(db, "users", order.userId);
+                    const userSnap = await getDoc(userRef);
+                    const currentBalance = userSnap.exists() ? (userSnap.data().balance || 0) : 0;
+                    await updateDoc(userRef, { balance: currentBalance + order.total });
+                }
+
+                await updateDoc(doc(db, "orders", orderId), { 
+                    status: 'مكتملة',
+                    deliveryInfo: deliveryInfo 
+                });
+                showToast('تم قبول الطلب وإرسال بيانات التسليم للعميل بنجاح!');
+            } catch(e) {
+                showToast('خطأ أثناء اعتماد الطلب: ' + e.message, 'error');
+            }
+        }
+
+        window.deleteOrder = async function(orderId) {
+            if(confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+                try {
+                    await deleteDoc(doc(db, "orders", orderId));
+                    showToast('تم حذف الطلب بنجاح.');
+                } catch(e) {
+                    showToast('خطأ: ' + e.message, 'error');
+                }
+            }
+        }
+
         function renderProducts() {
             const grid = document.getElementById('products-grid');
             grid.innerHTML = '';
             
-            const filtered = currentSelectedCategory === 'all' 
+            let filtered = currentSelectedCategory === 'all' 
                 ? allProductsCache 
                 : allProductsCache.filter(p => p.category === currentSelectedCategory);
 
+            if(searchQuery) {
+                filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery));
+            }
+
             if(filtered.length === 0) {
-                grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-10 text-xs">لا توجد منتجات في هذا القسم حالياً.</p>`;
+                grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-10 text-xs">لا توجد منتجات مطابقة للبحث أو القسم.</p>`;
                 return;
             }
 
@@ -325,7 +488,10 @@
                             <h3 class="font-bold text-sm mt-1 mb-1">${product.name}</h3>
                             <p class="text-emerald-400 font-black text-base mb-3">$${Number(product.price).toFixed(2)}</p>
                         </div>
-                        <button class="add-btn w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-xs transition">أضف للسلة</button>
+                        <div class="flex space-x-1 space-x-reverse">
+                            <button class="add-btn flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-xs transition">أضف للسلة</button>
+                            ${currentUser && currentUser.email === ADMIN_EMAIL ? `<button onclick="window.deleteProduct('${product.id}')" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-3 py-2 rounded-xl text-xs transition"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
                     </div>
                 `;
                 card.querySelector('.add-btn').addEventListener('click', () => window.addToCart(product));
@@ -342,11 +508,22 @@
             try {
                 await addDoc(collection(db, "products"), { name, price, image, category, createdAt: new Date() });
                 document.getElementById('add-product-form').reset();
-                alert('تمت إضافة المنتج بنجاح!');
+                showToast('تمت إضافة المنتج بنجاح!');
             } catch (error) {
-                alert('خطأ: ' + error.message);
+                showToast('خطأ: ' + error.message, 'error');
             }
         };
+
+        window.deleteProduct = async function(productId) {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                try {
+                    await deleteDoc(doc(db, "products", productId));
+                    showToast('تم حذف المنتج بنجاح.');
+                } catch(e) {
+                    showToast('خطأ: ' + e.message, 'error');
+                }
+            }
+        }
 
         window.handleAuth = async function(event) {
             event.preventDefault();
@@ -355,9 +532,9 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 window.closeAuthModal();
-                alert('تم تسجيل الدخول بنجاح!');
+                showToast('تم تسجيل الدخول بنجاح!');
             } catch (error) {
-                alert('فشل تسجيل الدخول: تأكد من البيانات.');
+                showToast('فشل تسجيل الدخول: تأكد من صحة البيانات.', 'error');
             }
         };
 
@@ -365,23 +542,23 @@
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             if(!email || !password) {
-                alert('يرجى إدخال البريد وكلمة المرور.');
+                showToast('يرجى إدخال البريد وكلمة المرور.', 'error');
                 return;
             }
             try {
                 const res = await createUserWithEmailAndPassword(auth, email, password);
                 await setDoc(doc(db, "users", res.user.uid), { email: email, balance: 0 });
                 window.closeAuthModal();
-                alert('تم إنشاء الحساب بنجاح!');
+                showToast('تم إنشاء الحساب بنجاح!');
             } catch (error) {
-                alert('خطأ: ' + error.message);
+                showToast('خطأ: ' + error.message, 'error');
             }
         };
 
         window.logout = async function() {
             await signOut(auth);
             window.closeProfileModal();
-            alert('تم تسجيل الخروج.');
+            showToast('تم تسجيل الخروج.');
         };
 
         function updateAuthUI() {
@@ -407,7 +584,7 @@
             if (existing) existing.qty += 1;
             else cart.push({ ...product, qty: 1 });
             window.updateCartUI();
-            alert('تمت الإضافة إلى السلة!');
+            showToast('تمت الإضافة إلى السلة!');
         };
 
         window.updateCartUI = function() {
@@ -446,12 +623,12 @@
 
         window.checkout = async function() {
             if(!currentUser) {
-                alert('يجب تسجيل الدخول أولاً.');
+                showToast('يجب تسجيل الدخول أولاً.', 'error');
                 window.openAuthModal();
                 return;
             }
             if(cart.length === 0) {
-                alert('السلة فارغة!');
+                showToast('السلة فارغة!', 'error');
                 return;
             }
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -464,33 +641,31 @@
                     const balance = userSnap.exists() ? (userSnap.data().balance || 0) : 0;
 
                     if(balance < total) {
-                        alert('رصيدك المتاح غير كافٍ. يرجى شحن حسابك عبر USDT أو شام كاش من إعدادات الملف الشخصي.');
+                        showToast('رصيدك المتاح غير كافٍ. يرجى شحن حسابك.', 'error');
                         window.openProfileModal();
                         return;
                     }
                     await updateDoc(userRef, { balance: balance - total });
                 }
 
-                // تسجيل الطلب في النظام
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
+                    userId: currentUser.uid,
+                    type: 'شراء منتجات',
                     items: cart,
                     total: total,
                     gateway: gateway,
                     status: gateway === 'Balance' ? 'مكتملة' : `قيد المراجعة (${gateway})`,
+                    deliveryInfo: gateway === 'Balance' ? 'تم الخصم الفوري من الرصيد. قيد التجهيز من الإدارة.' : '',
                     createdAt: new Date()
                 });
 
                 cart = [];
                 window.updateCartUI();
                 window.closeCartModal();
-                if(gateway === 'Balance') {
-                    alert('تم إتمام الطلب بنجاح وتم خصم المبلغ من رصيدك!');
-                } else {
-                    alert(`تم استلام طلبك عبر ${gateway} بقيمة $${total.toFixed(2)}. يجدر إتمام التحويل لتسليم الطلب.`);
-                }
+                showToast(gateway === 'Balance' ? 'تم إتمام الطلب بنجاح!' : 'تم إرسال الطلب بنجاح في انتظار التحويل.');
             } catch (error) {
-                alert('خطأ أثناء إتمام الطلب: ' + error.message);
+                showToast('خطأ أثناء إتمام الطلب: ' + error.message, 'error');
             }
         };
 
