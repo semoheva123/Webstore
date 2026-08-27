@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Tajawal', sans-serif; }
-    </style>
+    <style>body { font-family: 'Tajawal', sans-serif; }</style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between">
 
@@ -18,66 +16,137 @@
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-2xl font-black text-indigo-400">EFRÎN <span class="text-white">ONE</span></h1>
             
-            <div class="flex items-center space-x-4 space-x-reverse">
+            <div class="flex items-center space-x-3 space-x-reverse">
                 <button onclick="window.openCartModal()" class="relative p-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition">
                     <i class="fas fa-shopping-cart text-lg"></i>
                     <span id="cart-badge" class="absolute -top-2 -right-2 bg-emerald-500 text-slate-900 text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">0</span>
                 </button>
-                
                 <div id="auth-nav-container">
-                    <button onclick="window.openAuthModal()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-sm transition">تسجيل الدخول / إنشاء حساب</button>
+                    <button onclick="window.openAuthModal()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-sm transition">تسجيل الدخول</button>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <header class="max-w-7xl mx-auto px-4 my-8 w-full">
-        <div class="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-3xl p-8 border border-indigo-500/30 shadow-2xl flex flex-col items-start justify-center">
-            <h2 class="text-3xl md:text-5xl font-black mb-4">مرحباً بك في <span class="text-indigo-400">EFRÎN ONE STORE</span></h2>
-            <p class="text-slate-300 text-sm md:text-lg mb-6">وجهتك السحابية الأولى للحصول على أفضل الخدمات الرقمية، الحسابات، وشحن الألعاب بأمان وسرعة فائقة.</p>
-            <button onclick="window.scrollToProducts()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3 rounded-xl transition">تصفح المنتجات الآن</button>
+    <header class="max-w-7xl mx-auto px-4 my-6 w-full">
+        <div class="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-3xl p-6 md:p-8 border border-indigo-500/30 shadow-2xl flex flex-col items-start justify-center">
+            <h2 class="text-2xl md:text-4xl font-black mb-3">مرحباً بك في <span class="text-indigo-400">EFRÎN ONE STORE</span></h2>
+            <p class="text-slate-300 text-sm md:text-base mb-4">وجهتك السحابية الأولى للحصول على أفضل الخدمات الرقمية والألعاب بطرق دفع آمنة (USDT - شام كاش).</p>
+            <button onclick="window.scrollToProducts()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 rounded-xl transition text-sm">تصفح المنتجات الآن</button>
         </div>
     </header>
+
+    <!-- Categories Bar -->
+    <section class="max-w-7xl mx-auto px-4 mb-6 w-full">
+        <h3 class="text-lg font-bold mb-3 text-indigo-300">الأقسام السحابية</h3>
+        <div class="flex overflow-x-auto space-x-2 space-x-reverse pb-2 scrollbar-none" id="categories-container">
+            <button onclick="window.filterCategory('all')" class="cat-btn bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">الكل</button>
+            <button onclick="window.filterCategory('الألعاب')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">الألعاب</button>
+            <button onclick="window.filterCategory('شحن البرامج')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">شحن البرامج</button>
+            <button onclick="window.filterCategory('شحن الرصيد')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">شحن الرصيد</button>
+            <button onclick="window.filterCategory('عملات رقمية')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">عملات رقمية</button>
+            <button onclick="window.filterCategory('اكسسوارات أجهزة')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">اكسسوارات أجهزة</button>
+            <button onclick="window.filterCategory('أجهزة موبايل')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">أجهزة موبايل</button>
+            <button onclick="window.filterCategory('خدمات سوفت وير')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">خدمات سوفت وير</button>
+            <button onclick="window.filterCategory('أرقام لتفعيل الحسابات')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">أرقام لتفعيل الحسابات</button>
+            <button onclick="window.filterCategory('خدمات متنوعة')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">خدمات متنوعة</button>
+            <button onclick="window.filterCategory('برامج ربحية')" class="cat-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">برامج ربحية</button>
+        </div>
+    </section>
 
     <!-- Admin Panel -->
     <section id="admin-panel" class="max-w-7xl mx-auto px-4 my-6 w-full hidden">
         <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-6">
             <h3 class="text-xl font-bold mb-4 text-emerald-400"><i class="fas fa-user-shield ml-2"></i>لوحة تحكم الأدمن</h3>
-            
-            <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <input type="text" id="new-prod-name" placeholder="اسم المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <input type="number" step="0.01" id="new-prod-price" placeholder="السعر ($)" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <input type="url" id="new-prod-image" placeholder="رابط صورة المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl py-3 text-sm transition">إضافة منتج جديد</button>
+            <form id="add-product-form" onsubmit="window.handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                <input type="text" id="new-prod-name" placeholder="اسم المنتج" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                <input type="number" step="0.01" id="new-prod-price" placeholder="السعر ($)" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                <input type="url" id="new-prod-image" placeholder="رابط الصورة" required class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs">
+                <select id="new-prod-category" class="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                    <option value="الألعاب">الألعاب</option>
+                    <option value="شحن البرامج">شحن البرامج</option>
+                    <option value="شحن الرصيد">شحن الرصيد</option>
+                    <option value="عملات رقمية">عملات رقمية</option>
+                    <option value="اكسسوارات أجهزة">اكسسوارات أجهزة</option>
+                    <option value="أجهزة موبايل">أجهزة موبايل</option>
+                    <option value="خدمات سوفت وير">خدمات سوفت وير</option>
+                    <option value="أرقام لتفعيل الحسابات">أرقام لتفعيل الحسابات</option>
+                    <option value="خدمات متنوعة">خدمات متنوعة</option>
+                    <option value="برامج ربحية">برامج ربحية</option>
+                </select>
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl py-2.5 text-xs transition">إضافة منتج</button>
             </form>
-
-            <h4 class="font-bold text-sm text-slate-300 mb-2">طلبات الشراء الواردة:</h4>
-            <div id="admin-orders-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
         </div>
     </section>
 
     <!-- Products Grid -->
     <main id="products-section" class="max-w-7xl mx-auto px-4 my-6 flex-grow w-full">
-        <h3 class="text-2xl font-bold mb-6 border-r-4 border-indigo-500 pr-3">قائمة المنتجات المتاحة</h3>
-        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <h3 id="current-category-title" class="text-xl font-bold mb-4 border-r-4 border-indigo-500 pr-3">قائمة المنتجات المتاحة</h3>
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <p class="text-slate-400 col-span-full text-center py-10">جاري تحميل المنتجات...</p>
         </div>
     </main>
+
+    <!-- Profile Modal (شحن الرصيد عبر USDT أو شام كاش) -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg p-6 rounded-2xl relative">
+            <button onclick="window.closeProfileModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            <h3 class="text-xl font-bold mb-4 text-indigo-400"><i class="fas fa-user-gear ml-2"></i>إعدادات الحساب وشحن الرصيد</h3>
+            
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-4 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400">البريد الإلكتروني:</p>
+                    <p id="profile-email-display" class="font-bold text-sm text-white"></p>
+                </div>
+                <div class="text-left">
+                    <p class="text-xs text-slate-400">رصيدك الحالي:</p>
+                    <p id="profile-balance-display" class="font-black text-emerald-400 text-lg">$0.00</p>
+                </div>
+            </div>
+
+            <div class="mb-4 bg-slate-900 p-4 rounded-xl border border-slate-700">
+                <h4 class="font-bold text-sm text-slate-200 mb-3"><i class="fas fa-wallet ml-1 text-emerald-400"></i> شحن رصيد الحساب</h4>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">اختر طريقة الدفع:</label>
+                        <select id="deposit-gateway" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                            <option value="USDT">USDT (شبكة TRC20)</option>
+                            <option value="ShamCash">شام كاش (Sham Cash)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <input type="number" id="deposit-amount" placeholder="المبلغ المراد شحنه ($)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs">
+                    </div>
+
+                    <div id="payment-instructions" class="text-[11px] bg-indigo-950/60 p-3 rounded-lg border border-indigo-500/30 text-indigo-200">
+                        <!-- يتم التبديل هنا تلقائياً بناء على طريقة الدفع -->
+                    </div>
+
+                    <button onclick="window.submitDepositRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl font-bold text-xs transition">تأكيد طلب شحن الرصيد</button>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-700 pt-3 flex justify-between">
+                <button onclick="window.logout()" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition">تسجيل الخروج</button>
+                <button onclick="window.closeProfileModal()" class="bg-slate-700 px-4 py-2 rounded-xl text-xs font-bold">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-800 border border-slate-700 w-full max-w-md p-6 rounded-2xl relative">
             <button onclick="window.closeAuthModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-            <h3 class="text-xl font-bold mb-4 text-center">حسابي</h3>
-            
-            <form id="auth-form" onsubmit="window.handleAuth(event)" class="space-y-4">
-                <input type="email" id="auth-email" placeholder="البريد الإلكتروني" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                <input type="password" id="auth-password" placeholder="كلمة المرور" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                
-                <div class="flex space-x-3 space-x-reverse pt-2">
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-bold py-3 rounded-xl text-sm transition">تسجيل الدخول</button>
-                    <button type="button" onclick="window.handleSignUp()" class="flex-1 bg-slate-700 hover:bg-slate-600 font-bold py-3 rounded-xl text-sm transition">إنشاء حساب جديد</button>
+            <h3 class="text-xl font-bold mb-4 text-center">حساب المستخدم</h3>
+            <form onsubmit="window.handleAuth(event)" class="space-y-3">
+                <input type="email" id="auth-email" placeholder="البريد الإلكتروني" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                <input type="password" id="auth-password" placeholder="كلمة المرور" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs">
+                <div class="flex space-x-2 space-x-reverse pt-2">
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-bold py-2.5 rounded-xl text-xs transition">دخول</button>
+                    <button type="button" onclick="window.handleSignUp()" class="flex-1 bg-slate-700 hover:bg-slate-600 font-bold py-2.5 rounded-xl text-xs transition">تسجيل جديد</button>
                 </div>
             </form>
         </div>
@@ -88,28 +157,37 @@
         <div class="bg-slate-800 border border-slate-700 w-full max-w-md p-6 rounded-2xl relative">
             <button onclick="window.closeCartModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             <h3 class="text-xl font-bold mb-4 border-b border-slate-700 pb-2">سلة الشراء</h3>
+            <div id="cart-items-container" class="space-y-3 max-h-48 overflow-y-auto mb-4 text-xs">
+                <p class="text-slate-400 text-center py-4">السلة فارغة حالياً.</p>
+            </div>
             
-            <div id="cart-items-container" class="space-y-3 max-h-60 overflow-y-auto mb-4">
-                <p class="text-slate-400 text-center text-sm py-4">السلة فارغة حالياً.</p>
+            <div class="space-y-3 mb-4">
+                <div class="flex justify-between items-center border-t border-slate-700 pt-3 text-sm">
+                    <span class="font-bold">المجموع:</span>
+                    <span id="cart-total-price" class="text-emerald-400 font-black text-lg">$0.00</span>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">طريقة الدفع عند إتمام الطلب:</label>
+                    <select id="checkout-gateway" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                        <option value="Balance">الرصيد المتاح في الحساب</option>
+                        <option value="USDT">USDT (عملات رقمية)</option>
+                        <option value="ShamCash">شام كاش (Sham Cash)</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="flex justify-between items-center border-t border-slate-700 pt-4 mb-4">
-                <span class="font-bold">المجموع الإجمالي:</span>
-                <span id="cart-total-price" class="text-emerald-400 font-black text-xl">$0.00</span>
-            </div>
-
-            <button onclick="window.checkout()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">إتمام الطلب</button>
+            <button onclick="window.checkout()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 rounded-xl transition text-sm">تأكيد وإتمام الطلب</button>
         </div>
     </div>
 
-    <footer class="bg-slate-950 border-t border-slate-800 text-center py-6 text-slate-500 text-xs">
+    <footer class="bg-slate-950 border-t border-slate-800 text-center py-4 text-slate-500 text-xs">
         <p>© 2026 EFRÎN ONE STORE. جميع الحقوق محفوظة.</p>
     </footer>
 
-    <!-- Firebase Script -->
+    <!-- Script Logic -->
     <script type="module">
         import { 
-            db, auth, collection, addDoc, onSnapshot, 
+            db, auth, collection, addDoc, onSnapshot, doc, getDoc, setDoc, updateDoc,
             signInWithEmailAndPassword, createUserWithEmailAndPassword, 
             signOut, onAuthStateChanged 
         } from "./firebase-config.js";
@@ -117,50 +195,141 @@
         const ADMIN_EMAIL = "admin@efrin.com";
         let cart = [];
         let currentUser = null;
+        let currentSelectedCategory = 'all';
+        let allProductsCache = [];
 
         window.openCartModal = () => document.getElementById('cart-modal').classList.remove('hidden');
         window.closeCartModal = () => document.getElementById('cart-modal').classList.add('hidden');
         window.openAuthModal = () => document.getElementById('auth-modal').classList.remove('hidden');
         window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
+        window.openProfileModal = () => { document.getElementById('profile-modal').classList.remove('hidden'); loadUserData(); }
+        window.closeProfileModal = () => document.getElementById('profile-modal').classList.add('hidden');
         window.scrollToProducts = () => document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
 
-        onAuthStateChanged(auth, (user) => {
+        // تعليمات بوابات الدفع
+        const gatewayInfo = {
+            "USDT": "عنوان محفظة USDT (TRC20): <br><code class='text-emerald-400 font-mono select-all'>T9zW...YourUSDTWalletAddress...Example</code><br>يرجى إرسال المبلغ ثم مراجعة الإدارة.",
+            "ShamCash": "معرف حساب شام كاش (Sham Cash ID): <br><code class='text-emerald-400 font-mono select-all'>SHAM-CASH-EFRIN-992</code><br>يرجى التحويل وإرسال رقم العملية."
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const depositSelect = document.getElementById('deposit-gateway');
+            const instructionsDiv = document.getElementById('payment-instructions');
+            if(depositSelect) {
+                depositSelect.addEventListener('change', (e) => {
+                    instructionsDiv.innerHTML = gatewayInfo[e.target.value];
+                });
+                instructionsDiv.innerHTML = gatewayInfo[depositSelect.value];
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             updateAuthUI();
             const adminPanel = document.getElementById('admin-panel');
-            if (user && user.email === ADMIN_EMAIL) {
-                adminPanel.classList.remove('hidden');
-                loadAdminOrders();
+            if (user) {
+                if(user.email === ADMIN_EMAIL) adminPanel.classList.remove('hidden');
+                else adminPanel.classList.add('hidden');
+                
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if(!userSnap.exists()) {
+                    await setDoc(userRef, { email: user.email, balance: 0 });
+                }
             } else {
                 adminPanel.classList.add('hidden');
             }
         });
 
-        function fetchProducts() {
-            const grid = document.getElementById('products-grid');
-            onSnapshot(collection(db, "products"), (snapshot) => {
-                grid.innerHTML = '';
-                if(snapshot.empty) {
-                    grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-10">لا توجد منتجات مضافة بعد.</p>`;
-                    return;
-                }
-                snapshot.forEach((docSnap) => {
-                    const product = { id: docSnap.id, ...docSnap.data() };
-                    const card = document.createElement('div');
-                    card.className = "bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between hover:border-indigo-500 transition";
-                    card.innerHTML = `
-                        <img src="${product.image}" alt="${product.name}" class="w-full h-40 object-cover">
-                        <div class="p-4 flex flex-col flex-grow justify-between">
-                            <div>
-                                <h3 class="font-bold text-lg mb-2">${product.name}</h3>
-                                <p class="text-emerald-400 font-black text-xl mb-4">$${Number(product.price).toFixed(2)}</p>
-                            </div>
-                            <button class="add-btn w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-sm transition">أضف إلى السلة</button>
-                        </div>
-                    `;
-                    card.querySelector('.add-btn').addEventListener('click', () => window.addToCart(product));
-                    grid.appendChild(card);
+        async function loadUserData() {
+            if(!currentUser) return;
+            const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+            if(userSnap.exists()) {
+                const data = userSnap.data();
+                document.getElementById('profile-email-display').innerText = currentUser.email;
+                document.getElementById('profile-balance-display').innerText = `$${(data.balance || 0).toFixed(2)}`;
+            }
+        }
+
+        window.submitDepositRequest = async function() {
+            if(!currentUser) return;
+            const amount = parseFloat(document.getElementById('deposit-amount').value);
+            const gateway = document.getElementById('deposit-gateway').value;
+            if(!amount || amount <= 0) {
+                alert('يرجى إدخال مبلغ شحن صحيح.');
+                return;
+            }
+            try {
+                // تسجيل طلب الشحن مع طريقة الدفع
+                await addDoc(collection(db, "orders"), {
+                    userEmail: currentUser.email,
+                    type: 'شحن رصيد',
+                    gateway: gateway,
+                    total: amount,
+                    status: 'قيد المراجعة',
+                    createdAt: new Date()
                 });
+                document.getElementById('deposit-amount').value = '';
+                alert(`تم إرسال طلب الشحن بنجاح عبر ${gateway} بقيمة $${amount}. سيتم اعتماد الرصيد فور التحقق.`);
+                window.closeProfileModal();
+            } catch(e) {
+                alert('حدث خطأ: ' + e.message);
+            }
+        }
+
+        window.filterCategory = function(cat) {
+            currentSelectedCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+                if(btn.innerText === cat || (cat === 'all' && btn.innerText === 'الكل')) {
+                    btn.classList.add('bg-indigo-600', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                }
+            });
+            document.getElementById('current-category-title').innerText = cat === 'all' ? 'قائمة المنتجات المتاحة' : `قسم: ${cat}`;
+            renderProducts();
+        }
+
+        function fetchProducts() {
+            onSnapshot(collection(db, "products"), (snapshot) => {
+                allProductsCache = [];
+                snapshot.forEach((docSnap) => {
+                    allProductsCache.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderProducts();
+            });
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            
+            const filtered = currentSelectedCategory === 'all' 
+                ? allProductsCache 
+                : allProductsCache.filter(p => p.category === currentSelectedCategory);
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-10 text-xs">لا توجد منتجات في هذا القسم حالياً.</p>`;
+                return;
+            }
+
+            filtered.forEach((product) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between hover:border-indigo-500 transition";
+                card.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-36 object-cover">
+                    <div class="p-3 flex flex-col flex-grow justify-between">
+                        <div>
+                            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md">${product.category || 'عام'}</span>
+                            <h3 class="font-bold text-sm mt-1 mb-1">${product.name}</h3>
+                            <p class="text-emerald-400 font-black text-base mb-3">$${Number(product.price).toFixed(2)}</p>
+                        </div>
+                        <button class="add-btn w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-xl font-bold text-xs transition">أضف للسلة</button>
+                    </div>
+                `;
+                card.querySelector('.add-btn').addEventListener('click', () => window.addToCart(product));
+                grid.appendChild(card);
             });
         }
 
@@ -169,8 +338,9 @@
             const name = document.getElementById('new-prod-name').value;
             const price = parseFloat(document.getElementById('new-prod-price').value);
             const image = document.getElementById('new-prod-image').value;
+            const category = document.getElementById('new-prod-category').value;
             try {
-                await addDoc(collection(db, "products"), { name, price, image, createdAt: new Date() });
+                await addDoc(collection(db, "products"), { name, price, image, category, createdAt: new Date() });
                 document.getElementById('add-product-form').reset();
                 alert('تمت إضافة المنتج بنجاح!');
             } catch (error) {
@@ -187,7 +357,7 @@
                 window.closeAuthModal();
                 alert('تم تسجيل الدخول بنجاح!');
             } catch (error) {
-                alert('فشل تسجيل الدخول: ' + error.message);
+                alert('فشل تسجيل الدخول: تأكد من البيانات.');
             }
         };
 
@@ -199,7 +369,8 @@
                 return;
             }
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
+                const res = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, "users", res.user.uid), { email: email, balance: 0 });
                 window.closeAuthModal();
                 alert('تم إنشاء الحساب بنجاح!');
             } catch (error) {
@@ -209,6 +380,7 @@
 
         window.logout = async function() {
             await signOut(auth);
+            window.closeProfileModal();
             alert('تم تسجيل الخروج.');
         };
 
@@ -216,57 +388,54 @@
             const container = document.getElementById('auth-nav-container');
             if (currentUser) {
                 container.innerHTML = `
-                    <div class="flex items-center space-x-3 space-x-reverse">
-                        <span class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300">${currentUser.email}</span>
-                        <button onclick="window.logout()" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">خروج</button>
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <button onclick="window.openProfileModal()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 space-x-reverse">
+                            <i class="fas fa-user-circle text-indigo-400"></i>
+                            <span class="max-w-[100px] truncate">${currentUser.email}</span>
+                        </button>
                     </div>
                 `;
             } else {
                 container.innerHTML = `
-                    <button onclick="window.openAuthModal()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-sm transition">تسجيل الدخول / إنشاء حساب</button>
+                    <button onclick="window.openAuthModal()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg font-bold text-xs transition">تسجيل الدخول</button>
                 `;
             }
         }
 
         window.addToCart = function(product) {
             const existing = cart.find(item => item.id === product.id);
-            if (existing) {
-                existing.qty += 1;
-            } else {
-                cart.push({ ...product, qty: 1 });
-            }
+            if (existing) existing.qty += 1;
+            else cart.push({ ...product, qty: 1 });
             window.updateCartUI();
-            alert('تمت إضافة المنتج إلى السلة!');
+            alert('تمت الإضافة إلى السلة!');
         };
 
         window.updateCartUI = function() {
             const badge = document.getElementById('cart-badge');
-            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-            badge.innerText = totalItems;
+            badge.innerText = cart.reduce((sum, item) => sum + item.qty, 0);
 
             const container = document.getElementById('cart-items-container');
             container.innerHTML = '';
             let total = 0;
 
             if (cart.length === 0) {
-                container.innerHTML = '<p class="text-slate-400 text-center text-sm py-4">السلة فارغة حالياً.</p>';
+                container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">السلة فارغة حالياً.</p>';
             } else {
                 cart.forEach((item, index) => {
                     total += item.price * item.qty;
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = "flex justify-between items-center bg-slate-900 p-3 rounded-xl border border-slate-700";
+                    itemDiv.className = "flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-700";
                     itemDiv.innerHTML = `
                         <div>
-                            <h4 class="font-bold text-sm">${item.name}</h4>
-                            <p class="text-xs text-slate-400">$${item.price} × ${item.qty}</p>
+                            <h4 class="font-bold text-xs">${item.name}</h4>
+                            <p class="text-[10px] text-slate-400">$${item.price} × ${item.qty}</p>
                         </div>
-                        <button class="remove-btn text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                        <button class="remove-btn text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
                     `;
                     itemDiv.querySelector('.remove-btn').addEventListener('click', () => window.removeFromCart(index));
                     container.appendChild(itemDiv);
                 });
             }
-
             document.getElementById('cart-total-price').innerText = `$${total.toFixed(2)}`;
         };
 
@@ -277,7 +446,7 @@
 
         window.checkout = async function() {
             if(!currentUser) {
-                alert('يجب تسجيل الدخول أولاً لإتمام الطلب.');
+                alert('يجب تسجيل الدخول أولاً.');
                 window.openAuthModal();
                 return;
             }
@@ -285,43 +454,45 @@
                 alert('السلة فارغة!');
                 return;
             }
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const gateway = document.getElementById('checkout-gateway').value;
+            
             try {
-                const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                if (gateway === 'Balance') {
+                    const userRef = doc(db, "users", currentUser.uid);
+                    const userSnap = await getDoc(userRef);
+                    const balance = userSnap.exists() ? (userSnap.data().balance || 0) : 0;
+
+                    if(balance < total) {
+                        alert('رصيدك المتاح غير كافٍ. يرجى شحن حسابك عبر USDT أو شام كاش من إعدادات الملف الشخصي.');
+                        window.openProfileModal();
+                        return;
+                    }
+                    await updateDoc(userRef, { balance: balance - total });
+                }
+
+                // تسجيل الطلب في النظام
                 await addDoc(collection(db, "orders"), {
                     userEmail: currentUser.email,
                     items: cart,
                     total: total,
-                    status: 'قيد المعالجة',
+                    gateway: gateway,
+                    status: gateway === 'Balance' ? 'مكتملة' : `قيد المراجعة (${gateway})`,
                     createdAt: new Date()
                 });
+
                 cart = [];
                 window.updateCartUI();
                 window.closeCartModal();
-                alert('تم إرسال طلبك بنجاح!');
+                if(gateway === 'Balance') {
+                    alert('تم إتمام الطلب بنجاح وتم خصم المبلغ من رصيدك!');
+                } else {
+                    alert(`تم استلام طلبك عبر ${gateway} بقيمة $${total.toFixed(2)}. يجدر إتمام التحويل لتسليم الطلب.`);
+                }
             } catch (error) {
-                alert('خطأ: ' + error.message);
+                alert('خطأ أثناء إتمام الطلب: ' + error.message);
             }
         };
-
-        function loadAdminOrders() {
-            const ordersContainer = document.getElementById('admin-orders-list');
-            onSnapshot(collection(db, "orders"), (snapshot) => {
-                ordersContainer.innerHTML = '';
-                if(snapshot.empty) {
-                    ordersContainer.innerHTML = 'لا توجد طلبات حالياً.';
-                    return;
-                }
-                snapshot.forEach((docSnap) => {
-                    const order = docSnap.data();
-                    ordersContainer.innerHTML += `
-                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 mb-2">
-                            <p class="text-xs text-indigo-400 font-bold">المستخدم: ${order.userEmail}</p>
-                            <p class="text-xs text-slate-300">المجموع: $${order.total.toFixed(2)} | الحالة: ${order.status}</p>
-                        </div>
-                    `;
-                });
-            });
-        }
 
         fetchProducts();
     </script>
