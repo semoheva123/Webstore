@@ -8,13 +8,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBObnUf_n6dcpQEiNkE0Wcn8et_Fmn9jDY",
-  authDomain: "store-afbeb.firebaseapp.com",
-  projectId: "store-afbeb",
-  storageBucket: "store-afbeb.firebasestorage.app",
-  messagingSenderId: "727224850533",
-  appId: "1:727224850533:web:1b9c776e402bfc1d474e8c",
-  measurementId: "G-KVNDNVWYK3"
+  apiKey: "AIzaSyDACjoZ3pw1nnlPKrPpEaHprwKbhJdlu9U",
+  authDomain: "webstore-a6ca3.firebaseapp.com",
+  projectId: "webstore-a6ca3",
+  storageBucket: "webstore-a6ca3.firebasestorage.app",
+  messagingSenderId: "259371594335",
+  appId: "1:259371594335:web:b86a02409f740b892f61ea",
+  measurementId: "G-D1SJRKYPJH"
 };
 
 const app = initializeApp(firebaseConfig);
