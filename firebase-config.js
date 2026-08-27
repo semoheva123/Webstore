@@ -1,15 +1,12 @@
 // firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot 
+  getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, getDoc, setDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// ضع بيانات مشروعك الخاصة من Firebase Console هنا
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "efrin-one-store.firebaseapp.com",
@@ -19,9 +16,11 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-// تهيئة Firebase و Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// تصدير الأدوات الأساسية لاستخدامها في الملفات الأخرى
-export { db, collection, addDoc, deleteDoc, doc, onSnapshot };
+export { 
+  db, auth, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, getDoc, setDoc,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+};
