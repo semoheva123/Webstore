@@ -6,11 +6,11 @@ from telebot import types
 from groq import Groq
 
 # ----------------------------------------------------
-# Configuration
+# Configuration & Setup
 # ----------------------------------------------------
 BOT_TOKEN = "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E"
 ADMIN_ID = 966607076
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_API_KEY = "Gsk_vcb3Eo6MeEO9EhaxoUqkWGdyb3FYgdbOTZ6MypWbZ1EQ3bgYREaz"
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
@@ -25,8 +25,23 @@ except Exception:
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, username TEXT, full_name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS tickets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject TEXT, status TEXT DEFAULT 'open', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY, 
+            username TEXT, 
+            full_name TEXT, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            user_id INTEGER, 
+            subject TEXT, 
+            status TEXT DEFAULT 'open', 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -37,7 +52,8 @@ def save_user(user):
     try:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO users (user_id, username, full_name) VALUES (?, ?, ?)", (user.id, user.username or "", user.first_name or ""))
+        cursor.execute("INSERT OR IGNORE INTO users (user_id, username, full_name) VALUES (?, ?, ?)", 
+                       (user.id, user.username or "", user.first_name or ""))
         conn.commit()
         conn.close()
     except Exception:
@@ -45,71 +61,204 @@ def save_user(user):
 
 def ask_groq(prompt):
     if not groq_client:
-        return "مرحباً بك في أكاديمية النيزك! 🚀\n(ملاحظة: مفتاح Groq غير مفعل حالياً، يمكنك فتح تذكرة دعم لمساعدتك)."
+        return "⚡ مرحباً بك في أكاديمية النيزك! نعتذر، خدمة الذكاء الاصطناعي متوقفة مؤقتاً لصيانة السيرفر."
     try:
-        sys_msg = "أنت المساعد الذكي الرسمي لأكاديمية النيزك (Nayzak Academy). قدم إجابات سريعة ومحترفة باللغة العربية."
+        sys_msg = (
+            "أنت المساعد الذكي والاحترافي الرسمي لـ 'أكاديمية النيزك' (Nayzak Academy). "
+            "مهمتك مساعدة الطلاب والمهتمين بالبرمجة، وتطوير التطبيقات، وتحليل الأسواق المالية، وخدمات السيرفرات والشبكات. "
+            "كن دائماً ودوداً، مختصراً، ومنظماً في إجاباتك."
+        )
         res = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "system", "content": sys_msg}, {"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=1000,
         )
         return res.choices[0].message.content
-    except Exception:
-        return "عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي."
+    except Exception as e:
+        return f"عذراً، حدث خطأ في معالجة طلبك عبر الذكاء الاصطناعي."
 
 # ----------------------------------------------------
-# Telegram Handlers
+# Telegram Keyboards & Handlers
 # ----------------------------------------------------
+
+def main_menu_markup(is_admin=False):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        types.InlineKeyboardButton("🤖 اسأل الذكاء الاصطناعي", callback_data="mode_ai"),
+        types.InlineKeyboardButton("🎫 فتح تذكرة دعم", callback_data="open_ticket"),
+        types.InlineKeyboardButton("📚 دورات الأكاديمية", callback_data="courses_info"),
+        types.InlineKeyboardButton("🛠 خدماتنا التقنية", callback_data="services_info"),
+        types.InlineKeyboardButton("📞 التواصل المباشر", callback_data="contact_human")
+    )
+    if is_admin:
+        markup.add(types.InlineKeyboardButton("⚙️ لوحة تحكم الإدارة", callback_data="admin_panel"))
+    return markup
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     save_user(message.from_user)
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    btn_ai = types.InlineKeyboardButton("🤖 الذكاء الاصطناعي", callback_data="mode_ai")
-    btn_ticket = types.InlineKeyboardButton("🎫 فتح تذكرة دعم", callback_data="open_ticket")
-    btn_courses = types.InlineKeyboardButton("📚 دورات الأكاديمية", callback_data="courses_info")
-    btn_contact = types.InlineKeyboardButton("📞 التواصل مع الإدارة", callback_data="contact_human")
-    markup.add(btn_ai, btn_ticket, btn_courses, btn_contact)
-
-    if message.from_user.id == ADMIN_ID:
-        markup.add(types.InlineKeyboardButton("⚙️ لوحة الإدارة", callback_data="admin_panel"))
-
-    text = f"مرحباً بك {message.from_user.first_name} في **أكاديمية النيزك**! 🚀\n\nأنا بوت الدعم الفني الذكي، كيف يمكنني مساعدتك اليوم؟"
-    bot.reply_to(message, text, reply_markup=markup, parse_mode="Markdown")
+    is_admin = (message.from_user.id == ADMIN_ID)
+    
+    welcome_text = (
+        f"أهلاً بك يا أستاذ/ـه **{message.from_user.first_name}** في بوابة **أكاديمية النيزك (Nayzak Academy)** 🚀\n\n"
+        "نحن بوابتك الاحترافية نحو إتقان البرمجة، والتقنية، وتحليل الأسواق المالية.\n"
+        "اختر أحد الخيارات أدناه للبدء:"
+    )
+    bot.reply_to(message, welcome_text, reply_markup=main_menu_markup(is_admin), parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
+    uid = call.from_user.id
+    is_admin = (uid == ADMIN_ID)
+    
     try:
-        if call.data == "mode_ai":
-            bot.answer_callback_query(call.id, "نموذج الذكاء الاصطناعي فعال!")
-            bot.send_message(call.message.chat.id, "💬 تفضل بكتابة سؤالك وسيقوم المساعد الذكي بالرد عليك فوراً:")
+        if call.data == "main_menu":
+            bot.answer_callback_query(call.id)
+            bot.edit_message_text("القائمة الرئيسية لأكاديمية النيزك 🚀:", 
+                                  chat_id=call.message.chat.id, 
+                                  message_id=call.message.message_id, 
+                                  reply_markup=main_menu_markup(is_admin))
+
+        elif call.data == "mode_ai":
+            user_states[uid] = "AI_CHAT"
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="main_menu"))
+            bot.answer_callback_query(call.id)
+            bot.edit_message_text(
+                "🤖 **وضع المحادثة الذكية مفعل**\n\n"
+                "يمكنك الآن إرسال أي سؤال وسيقوم المساعد الذكي بالإجابة عليك فوراً.\n"
+                "*(لكتابة أمر آخر، استخدم العودة للقائمة)*",
+                chat_id=call.message.chat.id, 
+                message_id=call.message.message_id, 
+                reply_markup=markup, 
+                parse_mode="Markdown"
+            )
+
         elif call.data == "courses_info":
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="main_menu"))
+            courses_text = (
+                "📚 **دورات أكاديمية النيزك المعتمدة:**\n\n"
+                "1️⃣ **تطوير وتصميم الويب والتطبيقات:** (JavaScript, TypeScript, Node.js, React, Python, Flutter)\n"
+                "2️⃣ **تحليل الأسواق المالية والذهب (XAU/USD):** (Smart Money Concepts, Price Action, Volume Profile)\n"
+                "3️⃣ **إدارة السيرفرات والشبكات المتقدمة:** (Ubiquiti, Linux, Cloud Deployments)\n\n"
+                "💡 للتسجيل في أي دورة، يرجى فتح تذكرة دعم أو التواصل معنا مباشرة."
+            )
             bot.answer_callback_query(call.id)
-            bot.send_message(call.message.chat.id, "📚 **دورات وخدمات أكاديمية النيزك:**\n\n• البرمجة وتطوير التطبيقات\n• تحليل الأسواق والتداول\n• خدمات الشبكات والسيرفرات", parse_mode="Markdown")
+            bot.edit_message_text(courses_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+        elif call.data == "services_info":
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="main_menu"))
+            services_text = (
+                "🛠 **خدمات أكاديمية النيزك التقنية:**\n\n"
+                "• برمجة وتطوير المتاجر الإلكترونية ومنصات الويب.\n• بناء بوتات تيليجرام احترافية متكاملة.\n• هندسة الشبكات اللاسلكية وبرمجة أنظمة ربط الإشارات.\n• استشارات تحليلية متقدمة للأسواق المالية.\n\n"
+                "نحن هنا لخدمتك وتحويل أفكارك لواقع رقمي ناجح!"
+            )
+            bot.answer_callback_query(call.id)
+            bot.edit_message_text(services_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
         elif call.data == "open_ticket":
-            user_states[call.from_user.id] = "WAITING_TICKET"
+            user_states[uid] = "WAITING_TICKET"
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("❌ إلغاء", callback_data="main_menu"))
             bot.answer_callback_query(call.id)
-            bot.send_message(call.message.chat.id, "🎫 يرجى كتابة تفاصيل استفسارك لإرسالها لفريق الدعم:")
+            bot.edit_message_text(
+                "🎫 **فتح تذكرة دعم جديدة**\n\n"
+                "من فضلك، اكتب تفاصيل استفسارك أو مشكلتك في رسالة واحدة، وسيقوم فريق الإدارة بمتابعتها والرد عليك بأقرب وقت:",
+                chat_id=call.message.chat.id, 
+                message_id=call.message.message_id, 
+                reply_markup=markup, 
+                parse_mode="Markdown"
+            )
+
         elif call.data == "contact_human":
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("🔙 العودة للقائمة", callback_data="main_menu"))
             bot.answer_callback_query(call.id)
-            bot.send_message(call.message.chat.id, "📞 يمكنك التواصل المباشر مع إدارة الأكاديمية أو فتح تذكرة دعم.")
-        elif call.data == "admin_panel" and call.from_user.id == ADMIN_ID:
+            bot.edit_message_text(
+                "📞 **التواصل المباشر مع الإدارة:**\n\n"
+                "يمكنك دائماً فتح تذكرة دعم وسيتواصل معك مشرف الأكاديمية مباشرة عبر هذا البوت.\n"
+                "نحن سعداء بخدمتكم على مدار الساعة!",
+                chat_id=call.message.chat.id, 
+                message_id=call.message.message_id, 
+                reply_markup=markup, 
+                parse_mode="Markdown"
+            )
+
+        elif call.data == "admin_panel" and is_admin:
             conn = sqlite3.connect(DB_NAME)
             c = conn.cursor()
             c.execute("SELECT COUNT(*) FROM users")
-            ucount = c.fetchone()[0]
+            users_count = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM tickets WHERE status='open'")
+            open_tickets = c.fetchone()[0]
             conn.close()
-            bot.send_message(call.message.chat.id, f"🛠 **لوحة التحكم:**\n• عدد المشتركين: {ucount}", parse_mode="Markdown")
-    except Exception:
+
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                types.InlineKeyboardButton("📢 إرسال إشعار عام للكل (Broadcast)", callback_data="admin_broadcast"),
+                types.InlineKeyboardButton("🔙 القائمة الرئيسية", callback_data="main_menu")
+            )
+            
+            admin_text = (
+                f"⚙️ **لوحة تحكم الإدارة (Admin Panel):**\n\n"
+                f"👥 إجمالي المشتركين: `{users_count}`\n"
+                f"🎫 التذاكر المفتوحة حالياً: `{open_tickets}`\n"
+            )
+            bot.answer_callback_query(call.id)
+            bot.edit_message_text(admin_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+        elif call.data == "admin_broadcast" and is_admin:
+            user_states[uid] = "WAITING_BROADCAST"
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("❌ إلغاء", callback_data="admin_panel"))
+            bot.answer_callback_query(call.id)
+            bot.edit_message_text("📢 أرسل الرسالة التي تريد إذاعتها لجميع المشتركين الآن:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+
+        elif call.data.startswith("close_ticket_") and is_admin:
+            tid = call.data.split("_")[2]
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute("UPDATE tickets SET status='closed' WHERE id=?", (tid,))
+            conn.commit()
+            conn.close()
+            bot.answer_callback_query(call.id, f"تم إغلاق التذكرة #{tid}")
+            bot.edit_message_text(call.message.text + f"\n\n🔒 **[تم إغلاق هذه التذكرة بواسطة الإدارة]**", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+    except Exception as e:
         pass
 
 @bot.message_handler(func=lambda message: True)
 def handle_messages(message):
     uid = message.from_user.id
+    is_admin = (uid == ADMIN_ID)
     save_user(message.from_user)
 
-    if user_states.get(uid) == "WAITING_TICKET":
+    state = user_states.get(uid)
+
+    # 1. حالة إذاعة الرسائل للأدمن
+    if is_admin and state == "WAITING_BROADCAST":
+        user_states.pop(uid, None)
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("SELECT user_id FROM users")
+        all_users = c.fetchall()
+        conn.close()
+
+        success = 0
+        for u in all_users:
+            try:
+                bot.send_message(u[0], f"📢 **إشعار هام من إدارة الأكاديمية:**\n\n{message.text}", parse_mode="Markdown")
+                success += 1
+            except Exception:
+                pass
+        bot.reply_to(message, f"✅ تمت الإذاعة بنجاح إلى `{success}` مشترك.")
+        return
+
+    # 2. حالة فتح تذكرة دعم جديدة من المستخدم
+    if state == "WAITING_TICKET":
         user_states.pop(uid, None)
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
@@ -117,23 +266,40 @@ def handle_messages(message):
         tid = c.lastrowid
         conn.commit()
         conn.close()
-        bot.reply_to(message, f"✅ تم فتح تذكرتك بنجاح برقم **#{tid}**. سيتم متابعتك قريباً.")
+
+        bot.reply_to(message, f"✅ تم استلام استفسارك بنجاح وفتح تذكرة برقم **#{tid}**.\nسنقوم بالرد عليك في أسرع وقت ممكن.", parse_mode="Markdown")
+        
+        # إشعار الأدمن مع زر إغلاق التذكرة
         try:
-            bot.send_message(ADMIN_ID, f"🔔 **تذكرة جديدة #{tid}** من `{uid}`:\n\n{message.text}", parse_mode="Markdown")
+            admin_markup = types.InlineKeyboardMarkup()
+            admin_markup.add(types.InlineKeyboardButton(f"🔒 إغلاق التذكرة #{tid}", callback_data=f"close_ticket_{tid}"))
+            bot.send_message(
+                ADMIN_ID, 
+                f"🔔 **تذكرة دعم جديدة [#{tid}]**\n"
+                f"👤 من المستخدم: `{message.from_user.first_name}` (ID: `{uid}`)\n\n"
+                f"💬 النص:\n{message.text}", 
+                reply_markup=admin_markup, 
+                parse_mode="Markdown"
+            )
         except Exception:
             pass
         return
 
+    # 3. الرد الذكي المباشر (AI Chat) أو الرد الافتراضي
     bot.send_chat_action(message.chat.id, 'typing')
-    bot.reply_to(message, ask_groq(message.text))
+    ai_response = ask_groq(message.text)
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu"))
+    bot.reply_to(message, ai_response, reply_markup=markup, parse_mode="Markdown")
 
 # ----------------------------------------------------
-# Webhook Route & Flask Index
+# Flask Webhook Routes
 # ----------------------------------------------------
 
 @app.route('/')
 def index():
-    return "Nayzak Bot Active", 200
+    return "Nayzak Academy Professional Bot is Active & Running", 200
 
 @app.route('/' + BOT_TOKEN, methods=['POST'])
 def webhook():
