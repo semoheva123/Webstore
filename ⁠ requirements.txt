@@ -1,0 +1,6 @@
+Flask
+gunicorn
+pyTelegramBotAPI
+groq
+openai
+reportlab
