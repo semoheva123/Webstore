@@ -559,7 +559,8 @@ def handle_photo(message):
 # --- 11. إعداد الويب هوك والتشغيل عبر Web Server (Webhook Mode) ---
 # ==============================================================================
 
-WEBHOOK_PATH = f"/{BOT_TOKEN}"
+# ضبط المسار الآمن والثابت لتجنب خطأ 404
+WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 
 @app.route(WEBHOOK_PATH, methods=['POST'])
 def webhook():
@@ -571,7 +572,6 @@ def webhook():
     else:
         return '', 403
 
-# ربط الويب هوك تلقائياً عند بدء تشغيل التطبيق على السيرفر السحابي
 def setup_webhook():
     render_url = os.getenv("RENDER_EXTERNAL_URL")
     if render_url:
