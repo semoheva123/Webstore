@@ -559,7 +559,6 @@ def handle_photo(message):
 # --- 11. إعداد الويب هوك والتشغيل عبر Web Server (Webhook Mode) ---
 # ==============================================================================
 
-# ضبط المسار الآمن والثابت لتجنب خطأ 404
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 
 @app.route(WEBHOOK_PATH, methods=['POST'])
@@ -586,5 +585,4 @@ def setup_webhook():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
 else:
-    # عند التشغيل عبر Gunicorn
     setup_webhook()
