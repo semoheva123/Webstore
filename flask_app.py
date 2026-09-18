@@ -566,14 +566,32 @@ def handle_photo(message):
         bot.edit_message_text(f"❌ حدث خطأ أثناء معالجة الصورة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 11. تشغيل خيط البوت والسيرفر ---
+# --- 11. تشغيل خيط البوت والسيرفر بطريقة آمنة تمنع التعارض (Anti-Conflict) ---
 # ==============================================================================
+
+bot_thread_started = False
+thread_lock = threading.Lock()
 
 def run_bot():
     logging.info("Starting Telegram Bot Polling thread...")
-    bot.infinity_polling(skip_pending=True)
+    try:
+        bot.delete_webhook(drop_pending_updates=True)  # مسح أي اتصالات معلقة
+        bot.infinity_polling(skip_pending=True)
+    except Exception as err:
+        logging.error(f"Error in bot polling: {err}")
 
-threading.Thread(target=run_bot, daemon=True).start()
+@app.before_request
+def start_bot_thread_safe():
+    """تشغيل البوت لمرة واحدة فقط عند أول طلب للموقع لمنع تكراره عبر Gunicorn"""
+    global bot_thread_started
+    with thread_lock:
+        if not bot_thread_started:
+            logging.info("🚀 Initializing bot thread on first request (Anti-Conflict)...")
+            threading.Thread(target=run_bot, daemon=True).start()
+            bot_thread_started = True
 
+# تشغيل محلي إذا تم استدعاء الملف مباشرة بدون gunicorn
 if __name__ == "__main__":
-    app.run()
+    bot_thread_started = True
+    threading.Thread(target=run_bot, daemon=True).start()
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
