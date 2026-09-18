@@ -19,12 +19,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "FOREX AMT Bot is running smoothly on PythonAnywhere!"
+    return "FOREX AMT Bot is running smoothly!"
 
 # المفاتيح والمعرفات المباشرة
 BOT_TOKEN = "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E"
 GROQ_API_KEY = "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"
-OPENAI_API_KEY = "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"  # ضع مفتاح OpenAI الخاص بك هنا
 
 OFFICIAL_CHANNEL_ID = -1004363402118  # القناة العامة للتوصيات
 SUPPORT_CHAT_ID = -1004488517670      # قناة/مجموعة الدعم والاستشارات
@@ -166,7 +165,7 @@ def channel_info(message):
 def about_bot(message):
     about_text = (
         "🤖 **بوت FOREX AMT الذكي**\n\n"
-        "• يحلل الشارتات الفنية باستخدام OpenAI Vision.\n"
+        "• يحلل الشارتات الفنية باستخدام الذكاء الاصطناعي البصري (Groq Vision).\n"
         "• يجيب على كافة الاستفسارات التعليمية واستراتيجيات SMC فورياً عبر Groq AI.\n"
         "• يربطك مباشرة بفريق الدعم الفني والاستشارات."
     )
@@ -262,7 +261,7 @@ def handle_text_messages(message):
     bot.send_message(message.chat.id, "الرجاء اختيار أحد الخيارات من القائمة أدناه:", reply_markup=main_menu_markup())
 
 # ==============================================================================
-# --- 7. تحليل الصور (OpenAI Vision) ---
+# --- 7. تحليل الصور (Groq Vision) ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -285,28 +284,26 @@ def handle_photo(message):
             "4. نصيحة تعليمية موجزة."
         )
 
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {OPENAI_API_KEY}"}
-        payload = {
-            "model": "gpt-4o-mini",
-            "messages": [
+        response = groq_client.chat.completions.create(
+            model="llama-3.2-11b-vision-instruct",
+            messages=[
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt_instruction},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
                     ]
                 }
             ],
-            "max_tokens": 800
-        }
+            max_tokens=800
+        )
         
-        res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=30)
-        res_json = res.json()
-        
-        if 'choices' in res_json:
-            analysis_result = res_json['choices'][0]['message']['content']
-        else:
-            analysis_result = "⚠️ تعذر تحليل الشارت آلياً. تم توجيهه لفريق الدعم والمحللين."
+        analysis_result = response.choices[0].message.content
 
         bot.delete_message(message.chat.id, status_msg.message_id)
         bot.reply_to(message, f"🎯 **[نتيجة تحليل الشارت الذكي]**\n\n{analysis_result}", reply_markup=main_menu_markup(), parse_mode="Markdown")
@@ -349,7 +346,6 @@ def run_bot():
     logging.info("Starting Telegram Bot Polling thread...")
     bot.infinity_polling(skip_pending=True)
 
-# بدء تشغيل البوت في الخيط الخلفي بمجرد تحميل السيرفر
 threading.Thread(target=run_bot, daemon=True).start()
 
 if __name__ == "__main__":
