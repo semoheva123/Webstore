@@ -2,40 +2,42 @@ import io
 import base64
 import logging
 import sqlite3
+import threading
 import requests
 import telebot
 from telebot import types
+from flask import Flask
 from groq import Groq
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 
 # ==============================================================================
-# --- 1. الإعدادات والمفاتيح المباشرة (Direct Configuration) ---
+# --- 1. الإعدادات وسيرفر Flask ---
 # ==============================================================================
 
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "FOREX AMT Bot is running smoothly on PythonAnywhere!"
+
+# المفاتيح والمعرفات المباشرة
 BOT_TOKEN = "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E"
 GROQ_API_KEY = "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"
+OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"  # ضع مفتاح OpenAI الخاص بك هنا
 
-# ضع مفتاح OpenAI الخاص بك هنا لتحليل صور الشارتات
-OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"
-
-# معرّفات القنوات والمشرفين
-OFFICIAL_CHANNEL_ID = -1004363402118  # القناة العامة للتوصيات (FOREX AMT)
+OFFICIAL_CHANNEL_ID = -1004363402118  # القناة العامة للتوصيات
 SUPPORT_CHAT_ID = -1004488517670      # قناة/مجموعة الدعم والاستشارات
-ADMIN_IDS = [966607076]               # معرّف المشرف/المطور
+ADMIN_IDS = [966607076]               # معرف المشرف/المطور
 
-# إعداد السجلات
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# تهيئة البوت وعميل Groq
 bot = telebot.TeleBot(BOT_TOKEN)
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-
-# قاموس لتتبع حالات المستخدمين
 user_states = {}
 
 # ==============================================================================
-# --- 2. قاعدة البيانات (SQLite DB) ---
+# --- 2. قاعدة البيانات (SQLite) ---
 # ==============================================================================
 
 DB_NAME = "forex_amt.db"
@@ -70,7 +72,7 @@ def init_db():
 init_db()
 
 # ==============================================================================
-# --- 3. إنشاء الشهادات في الذاكرة (RAM) ---
+# --- 3. توليد الشهادات في الذاكرة (RAM) ---
 # ==============================================================================
 
 def generate_pdf_certificate_memory(student_name):
@@ -78,12 +80,10 @@ def generate_pdf_certificate_memory(student_name):
     c = canvas.Canvas(buffer, pagesize=landscape(letter))
     width, height = 792, 612
     
-    # رسم الإطار الخارجية
     c.setStrokeColorRGB(0.1, 0.1, 0.3)
     c.setLineWidth(5)
     c.rect(30, 30, width - 60, height - 60)
     
-    # النصوص والأنماط
     c.setFont("Helvetica-Bold", 30)
     c.setFillColorRGB(0.1, 0.1, 0.3)
     c.drawCentredString(width / 2, height - 120, "FOREX AMT ACADEMY")
@@ -108,7 +108,7 @@ def generate_pdf_certificate_memory(student_name):
     return buffer
 
 # ==============================================================================
-# --- 4. الأزرار والمجموعات التفاعلية ---
+# --- 4. الأزرار والقوائم التفاعلية ---
 # ==============================================================================
 
 def main_menu_markup():
@@ -128,7 +128,7 @@ def back_menu_markup():
     return markup
 
 # ==============================================================================
-# --- 5. التعامل مع الأوامر والأزرار الأساسية ---
+# --- 5. معالجة الأوامر الرئيسية ---
 # ==============================================================================
 
 @bot.message_handler(commands=['start'])
@@ -208,7 +208,7 @@ def request_chart_analysis(message):
     )
 
 # ==============================================================================
-# --- 6. معالجة النصوص المحادثة والأسئلة (Groq AI) ---
+# --- 6. معالجة النصوص (Groq AI والدعم) ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: True, content_types=['text'])
@@ -216,7 +216,6 @@ def handle_text_messages(message):
     uid = message.from_user.id
     state = user_states.get(uid)
     
-    # 1. توجيه استفسارات الدعم والاستشارات
     if state == "WAITING_CONSULTATION":
         user_states.pop(uid, None)
         consult_text = message.text
@@ -241,7 +240,6 @@ def handle_text_messages(message):
             logging.error(f"Failed sending to support chat: {e}")
         return
 
-    # 2. الرد الآلي الذكي على الأسئلة عبر Groq LLM
     if groq_client:
         bot.send_chat_action(message.chat.id, 'typing')
         try:
@@ -264,7 +262,7 @@ def handle_text_messages(message):
     bot.send_message(message.chat.id, "الرجاء اختيار أحد الخيارات من القائمة أدناه:", reply_markup=main_menu_markup())
 
 # ==============================================================================
-# --- 7. تحليل الصور والشارتات (OpenAI Vision) ---
+# --- 7. تحليل الصور (OpenAI Vision) ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -274,7 +272,6 @@ def handle_photo(message):
     status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة مستويات الـ SMC بالذكاء الاصطناعي...**", parse_mode="Markdown")
     
     try:
-        # تحميل صورة الشارت وتحويلها لـ Base64
         file_info = bot.get_file(message.photo[-1].file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         base64_image = base64.b64encode(downloaded_file).decode('utf-8')
@@ -318,7 +315,6 @@ def handle_photo(message):
         logging.error(f"Vision Processing Error: {e}")
         bot.edit_message_text("❌ حدث خطأ أثناء معالجة صورة الشارت.", message.chat.id, status_msg.message_id)
 
-    # إعادة توجيه نسخة من الصورة إلى قناة الدعم والمحللين
     try:
         caption = f"📸 **شارت جديد للتحليل** من: {message.from_user.first_name} (`{uid}`)"
         bot.send_photo(SUPPORT_CHAT_ID, message.photo[-1].file_id, caption=caption, parse_mode="Markdown")
@@ -326,7 +322,7 @@ def handle_photo(message):
         logging.error(f"Failed forwarding chart to support: {e}")
 
 # ==============================================================================
-# --- 8. أوامر المشرفين للنشر (Admin Command) ---
+# --- 8. أوامر المشرفين للنشر ---
 # ==============================================================================
 
 @bot.message_handler(commands=['post'])
@@ -346,9 +342,15 @@ def post_to_official_channel(message):
         bot.reply_to(message, f"❌ فشل النشر في القناة: {e}")
 
 # ==============================================================================
-# --- 9. تشغيل البوت الرئيسي ---
+# --- 9. تشغيل البوت في الخلفية لسيرفر Web ---
 # ==============================================================================
 
-if __name__ == "__main__":
-    logging.info("Starting FOREX AMT Bot...")
+def run_bot():
+    logging.info("Starting Telegram Bot Polling thread...")
     bot.infinity_polling(skip_pending=True)
+
+# بدء تشغيل البوت في الخيط الخلفي بمجرد تحميل السيرفر
+threading.Thread(target=run_bot, daemon=True).start()
+
+if __name__ == "__main__":
+    app.run()
