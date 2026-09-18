@@ -2,12 +2,11 @@ import io
 import os
 import logging
 import sqlite3
-import threading
 import urllib.parse
 import requests
 import telebot
 from telebot import types
-from flask import Flask
+from flask import Flask, request
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 
@@ -19,7 +18,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "FOREX AMT Bot is Running Smoothly! 🚀"
+    return "FOREX AMT Bot is Running Smoothly with Webhook! 🚀"
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
 OFFICIAL_CHANNEL_ID = -1004363402118
@@ -151,7 +150,6 @@ init_db()
 def main_menu_markup(user_id):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     
-    # يظهر زر الآدمن حصرياً للمسؤولين المصرح لهم
     if user_id in ADMIN_IDS:
         markup.row(types.KeyboardButton("👑 لوحة تحكم الإدارة"))
 
@@ -386,7 +384,6 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "الدرس غير موجود!")
         return
 
-    # التحكم الحصري للآدمن
     if uid not in ADMIN_IDS:
         bot.answer_callback_query(call.id, "🛑 إجراء محظور: للمشرفين فقط.", show_alert=True)
         return
@@ -475,23 +472,19 @@ def handle_text_messages(message):
                 f"2. التنسيق في نقاط محددة وإموجي واضحة (150 كلمة).\n"
                 f"3. شروط التداول والتطبيق العملي."
             )
-            # 1. توليد النص عبر Pollinations AI
             ai_content = poll_generate_text(prompt)
             if not ai_content:
                 ai_content = f"درس تعليمي مكثف حول {topic} ومفاهيم السيولة وهيكلية السوق (SMC)."
 
-            # 2. توليد صورة وشارت توضيحي أوتوماتيكياً
             chart_img_url = poll_generate_chart_image_url(topic)
             lesson_title = f"درس: {topic}"
 
-            # 3. الحفظ في قاعدة البيانات
             with get_db_connection() as conn:
                 conn.execute("INSERT INTO lessons (title, content, image_url) VALUES (?, ?, ?)", (lesson_title, ai_content, chart_img_url))
                 conn.commit()
 
             channel_text = f"🎓 **[درس تعليمي + مثال توضيحي]**\n\n📘 **{lesson_title}**\n\n{ai_content}\n\n---\n📲 تابع المزيد عبر بوت الأكاديمية الرسمية."
 
-            # 4. النشر في القناة الرسمية مع الصورة المصممة تلقائياً
             try:
                 bot.send_photo(OFFICIAL_CHANNEL_ID, chart_img_url, caption=channel_text, parse_mode="Markdown")
             except Exception as ch_err:
@@ -500,7 +493,6 @@ def handle_text_messages(message):
 
             bot.delete_message(message.chat.id, status_msg.message_id)
             
-            # 5. إرسال النتيجة للمشرف مع الشارت التوضيحي
             try:
                 bot.send_photo(message.chat.id, chart_img_url, caption=f"✅ **تم إنشاء ونشر الدرس والشارت بنجاح!**\n\n📘 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
             except Exception:
@@ -530,7 +522,6 @@ def handle_text_messages(message):
             logging.error(f"Failed to send support chat: {e}")
         return
 
-    # الرد الآلي الذكي على استفسارات المستخدم عبر Pollinations AI
     bot.send_chat_action(message.chat.id, 'typing')
     ai_reply = poll_generate_text(message.text)
     if ai_reply:
@@ -552,7 +543,6 @@ def handle_photo(message):
         file_info = bot.get_file(message.photo[-1].file_id)
         telegram_image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_info.file_path}"
 
-        # استدعاء الرؤية البصرية عبر Pollinations AI
         analysis_result = poll_analyze_chart_vision(telegram_image_url)
 
         if analysis_result:
@@ -566,32 +556,35 @@ def handle_photo(message):
         bot.edit_message_text(f"❌ حدث خطأ أثناء معالجة الصورة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 11. تشغيل خيط البوت والسيرفر بطريقة آمنة تمنع التعارض (Anti-Conflict) ---
+# --- 11. إعداد الويب هوك والتشغيل عبر Web Server (Webhook Mode) ---
 # ==============================================================================
 
-bot_thread_started = False
-thread_lock = threading.Lock()
+WEBHOOK_PATH = f"/{BOT_TOKEN}"
 
-def run_bot():
-    logging.info("Starting Telegram Bot Polling thread...")
-    try:
-        bot.delete_webhook(drop_pending_updates=True)  # مسح أي اتصالات معلقة
-        bot.infinity_polling(skip_pending=True)
-    except Exception as err:
-        logging.error(f"Error in bot polling: {err}")
+@app.route(WEBHOOK_PATH, methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        return '', 403
 
-@app.before_request
-def start_bot_thread_safe():
-    """تشغيل البوت لمرة واحدة فقط عند أول طلب للموقع لمنع تكراره عبر Gunicorn"""
-    global bot_thread_started
-    with thread_lock:
-        if not bot_thread_started:
-            logging.info("🚀 Initializing bot thread on first request (Anti-Conflict)...")
-            threading.Thread(target=run_bot, daemon=True).start()
-            bot_thread_started = True
+# ربط الويب هوك تلقائياً عند بدء تشغيل التطبيق على السيرفر السحابي
+def setup_webhook():
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+    if render_url:
+        webhook_url = f"{render_url}{WEBHOOK_PATH}"
+        try:
+            bot.remove_webhook()
+            bot.set_webhook(url=webhook_url)
+            logging.info(f"Webhook successfully set to: {webhook_url}")
+        except Exception as e:
+            logging.error(f"Failed to set webhook: {e}")
 
-# تشغيل محلي إذا تم استدعاء الملف مباشرة بدون gunicorn
 if __name__ == "__main__":
-    bot_thread_started = True
-    threading.Thread(target=run_bot, daemon=True).start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+else:
+    # عند التشغيل عبر Gunicorn
+    setup_webhook()
