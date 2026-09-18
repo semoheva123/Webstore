@@ -1,51 +1,107 @@
 import io
-import base64
+import os
 import logging
 import sqlite3
 import threading
+import urllib.parse
+import requests
 import telebot
 from telebot import types
 from flask import Flask
-from groq import Groq
-from openai import OpenAI
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 
 # ==============================================================================
-# --- 1. الإعدادات والربط مع المفاتيح ---
+# --- 1. إعداد تطبيق Flask والـ Bot ---
 # ==============================================================================
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "FOREX AMT System Status: Operational 🚀"
+    return "FOREX AMT Bot is Running Smoothly! 🚀"
 
-BOT_TOKEN = "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E"
-GROQ_API_KEY = "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"
-OPENROUTER_API_KEY = "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"
-
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
 OFFICIAL_CHANNEL_ID = -1004363402118
 SUPPORT_CHAT_ID = -1004488517670
-ADMIN_IDS = [966607076]  # معرف الآدمن المصرح له فقط
+ADMIN_IDS = [966607076]  # معرفات المشرفين المعتمدين فقط
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Groq للنصوص
-groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-
-# OpenRouter للرؤية البصرية وتحليل الصور (مجاني)
-openrouter_client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENROUTER_API_KEY,
-)
+# ضبط قائمة أوامر البوت تلقائياً في التليجرام
+try:
+    bot.set_my_commands([
+        telebot.types.BotCommand("start", "🏠 القائمة الرئيسية والبدء"),
+        telebot.types.BotCommand("admin", "👑 لوحة التحكم (للمشرفين فقط)")
+    ])
+except Exception as cmd_err:
+    logging.warning(f"Failed to set bot commands: {cmd_err}")
 
 user_states = {}
 
 # ==============================================================================
-# --- 2. قاعدة البيانات (SQLite) ---
+# --- 2. دمج خدمات Pollinations AI (نصوص + صور + رؤية) ---
+# ==============================================================================
+
+def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومدرس SMC/ICT في أكاديمية FOREX AMT."):
+    """توليد الردود والنصوص المجانية عبر Pollinations AI"""
+    url = "https://text.pollinations.ai/"
+    payload = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "model": "openai"
+    }
+    try:
+        res = requests.post(url, json=payload, timeout=45)
+        if res.status_code == 200:
+            return res.text
+    except Exception as e:
+        logging.error(f"Pollinations Text Error: {e}")
+    return None
+
+def poll_generate_chart_image_url(topic):
+    """توليد رابط صورة/شارت توضيحي تعليمي عبر Pollinations Image API"""
+    clean_topic = urllib.parse.quote(f"Educational forex trading chart diagram illustrating {topic}, Smart Money Concepts, SMC, ICT order block liquidity, clean financial graphic, high resolution")
+    image_url = f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
+    return image_url
+
+def poll_analyze_chart_vision(image_url):
+    """تحليل صورة الشارت المرفوعة باستخدام رؤية Pollinations AI"""
+    url = "https://text.pollinations.ai/"
+    prompt_instruction = (
+        "أنت خبير محترف في التداول بمفاهيم الأموال الذكية (SMC Senior Analyst).\n"
+        "قم بتحليل صورة الشارت المرفقة بشكل مختصر ومباشر واذكر:\n"
+        "1. الاتجاه العام وبنية السوق (BOS / CHoCH).\n"
+        "2. مناطق FVG والـ Order Blocks الرئيسية.\n"
+        "3. مناطق السيولة المستهدفة (BSL / SSL).\n"
+        "4. نصيحة سريعة للتداول."
+    )
+    payload = {
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_instruction},
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]
+            }
+        ],
+        "model": "openai"
+    }
+    try:
+        res = requests.post(url, json=payload, timeout=60)
+        if res.status_code == 200:
+            return res.text
+    except Exception as e:
+        logging.error(f"Pollinations Vision Error: {e}")
+    return None
+
+# ==============================================================================
+# --- 3. إدارة قاعدة البيانات (SQLite) ---
 # ==============================================================================
 
 DB_NAME = "forex_amt.db"
@@ -80,13 +136,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT,
                 content TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                details TEXT,
+                image_url TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -95,13 +145,13 @@ def init_db():
 init_db()
 
 # ==============================================================================
-# --- 3. تصميم القوائم الواجهة الاحترافية (UI Keyboards) ---
+# --- 4. تصميم واجهة أزرار التليجرام الاحترافية ---
 # ==============================================================================
 
 def main_menu_markup(user_id):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     
-    # حظر ظهور زر اللوحة نهائياً لغير الآدمن
+    # يظهر زر الآدمن حصرياً للمسؤولين المصرح لهم
     if user_id in ADMIN_IDS:
         markup.row(types.KeyboardButton("👑 لوحة تحكم الإدارة"))
 
@@ -125,19 +175,16 @@ def back_menu_markup():
 def admin_panel_keyboard():
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_stats = types.InlineKeyboardButton("📊 إحصائيات النظام", callback_data="admin_stats")
-    btn_trade = types.InlineKeyboardButton("🎯 نشر توصية", callback_data="admin_post_trade")
-    btn_post = types.InlineKeyboardButton("📢 منشور القناة", callback_data="admin_post_channel")
+    btn_lessons = types.InlineKeyboardButton("📚 إدارة وتوليد الدروس", callback_data="admin_manage_lessons")
     btn_broadcast = types.InlineKeyboardButton("📣 إذاعة للأعضاء", callback_data="admin_broadcast")
-    btn_lessons = types.InlineKeyboardButton("📚 إدارة الدروس", callback_data="admin_manage_lessons")
     btn_close = types.InlineKeyboardButton("❌ إغلاق اللوحة", callback_data="admin_close")
     
-    markup.add(btn_trade, btn_lessons)
-    markup.add(btn_stats, btn_post)
+    markup.add(btn_lessons, btn_stats)
     markup.add(btn_broadcast, btn_close)
     return markup
 
 # ==============================================================================
-# --- 4. أوامر البوت المحدثة مع شرط الحماية للآدمن ---
+# --- 5. أوامر البوت والتفاعل المباشر ---
 # ==============================================================================
 
 @bot.message_handler(commands=['start'])
@@ -159,17 +206,16 @@ def start_command(message):
         f"🏆 **أهلاً بك في أكاديمية FOREX AMT**\n"
         f"─────────────────────────\n"
         f"مرحباً بك يا **{fname}** 👋\n\n"
-        f"منصتك الذكية للتحليل المالي وفق مفاهيم **الأموال الذكية (SMC & ICT)**.\n\n"
+        f"منصتك الذكية للتحليل المالي والتعلم وفق مفاهيم **الأموال الذكية (SMC & ICT)**.\n\n"
         f"🔹 **خدمات البوت المتاحة:**\n"
-        f"• 📊 **تحليل الشارتات:** أرسل صورة الشارت للحصول على قراءة الذكاء الاصطناعي.\n"
-        f"• 📚 **الدروس التعليمية:** مكتبة شاملة لمفاهيم التداول.\n"
-        f"• 🎓 **الشهادات:** إصدار شهادة إتمام الدورة فوراً.\n"
-        f"• 💬 **الدعم الفني:** استشارات مباشرة مع فريق التحليل.\n\n"
+        f"• 📊 **تحليل الشارتات:** أرسل صورة الشارت لقراءتها فوراً بالذكاء الاصطناعي.\n"
+        f"• 📚 **الدروس المبتكرة:** دروس مدعومة بمخططات وشارتات توضيحية.\n"
+        f"• 🎓 **الشهادات:** إصدار شهادة تخرج رسمية فوراً.\n"
+        f"• 💬 **الدعم الفني:** التواصل المباشر مع المحللين.\n\n"
         f"👇 **اختر الخيار المطلوب من القائمة أدناه:**"
     )
     bot.send_message(message.chat.id, welcome_text, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
-# التحقق الصارم من معرّف الآدمن
 @bot.message_handler(commands=['admin'])
 @bot.message_handler(func=lambda msg: msg.text == "👑 لوحة تحكم الإدارة")
 def admin_command(message):
@@ -180,7 +226,7 @@ def admin_command(message):
         
     bot.send_message(
         message.chat.id,
-        "⚙️ **لوحة التحكم والتطوير - FOREX AMT**\n─────────────────────────\nإدارة العمليات والتفاعلات:",
+        "⚙️ **لوحة التحكم والتطوير - FOREX AMT**\n─────────────────────────\nاختر من الخيارات التالية:",
         reply_markup=admin_panel_keyboard(),
         parse_mode="Markdown"
     )
@@ -190,18 +236,6 @@ def back_to_main(message):
     uid = message.from_user.id
     user_states.pop(uid, None)
     bot.send_message(message.chat.id, "🔄 تم الانتقال إلى القائمة الرئيسية.", reply_markup=main_menu_markup(uid))
-
-@bot.message_handler(func=lambda msg: msg.text == "💬 الدعم والاستشارات")
-def request_consultation(message):
-    uid = message.from_user.id
-    user_states[uid] = "WAITING_CONSULTATION"
-    bot.send_message(
-        message.chat.id,
-        "💬 **قسم الدعم والاستشارات الفنية**\n─────────────────────────\n"
-        "اكتب استفسارك أو تحليل للزوج الذي تريده في رسالة واحدة، وسيقوم فريق الدعم بالرد عليك فوراً.",
-        reply_markup=back_menu_markup(),
-        parse_mode="Markdown"
-    )
 
 @bot.message_handler(func=lambda msg: msg.text == "📊 تحليل شارت تلقائي")
 def prompt_chart_upload(message):
@@ -213,13 +247,25 @@ def prompt_chart_upload(message):
         parse_mode="Markdown"
     )
 
+@bot.message_handler(func=lambda msg: msg.text == "💬 الدعم والاستشارات")
+def request_consultation(message):
+    uid = message.from_user.id
+    user_states[uid] = "WAITING_CONSULTATION"
+    bot.send_message(
+        message.chat.id,
+        "💬 **قسم الدعم والاستشارات الفنية**\n─────────────────────────\n"
+        "اكتب استفسارك أو تحليل الزوج المطلوب في رسالة واحدة وسيقوم المشرفون بالرد عليك.",
+        reply_markup=back_menu_markup(),
+        parse_mode="Markdown"
+    )
+
 @bot.message_handler(func=lambda msg: msg.text == "📈 القناة الرسمية")
 def channel_info(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("الانضمام للقناة الرسمية 🚀", url="https://t.me/wwwforexmta"))
     bot.send_message(
         message.chat.id,
-        "📢 **القناة الرسمية للأكاديمية**\n─────────────────────────\nتابع التوصيات والتحليلات اليومية الحصرية:",
+        "📢 **القناة الرسمية للأكاديمية**\n─────────────────────────\nتابع التوصيات والدروس الشاملة يومياً:",
         reply_markup=markup,
         parse_mode="Markdown"
     )
@@ -229,14 +275,14 @@ def about_bot(message):
     about_text = (
         "ℹ️ **دليل المنظومة - FOREX AMT**\n"
         "─────────────────────────\n"
-        "• **الذكاء البصري:** يحلل مستويات الـ Order Blocks والـ FVG والسيولة تلقائياً.\n"
-        "• **محرك النصوص:** مدعوم بواسطة نماذج الجيل الحديث لتوليد الإجابات المباشرة.\n"
-        "• **نظام الشهادات:** يولد شهادات توثيق PDF آلية في الذاكرة."
+        "• **الذكاء الاصطناعي:** توليد شارتات توضيحية وتحليل الصور تلقائياً.\n"
+        "• **الدروس الآلية:** إنشاء دروس مكثفة مدعمة بأمثلة صور مصممة فورياً.\n"
+        "• **نظام الشهادات:** إصدار شهادة إتمام الدورة تلقائياً."
     )
     bot.send_message(message.chat.id, about_text, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 5. إصدار الشهادات (PDF) ---
+# --- 6. توليد الشهادات (PDF) ---
 # ==============================================================================
 
 def generate_pdf_certificate_memory(student_name):
@@ -265,7 +311,7 @@ def generate_pdf_certificate_memory(student_name):
     
     c.setFont("Helvetica", 14)
     c.setFillColorRGB(0.3, 0.3, 0.3)
-    c.drawCentredString(width / 2, height - 330, "For successfully mastering Smart Money Concepts (SMC) & Market Structure.")
+    c.drawCentredString(width / 2, height - 330, "For mastering Smart Money Concepts (SMC) & Market Structure.")
     
     c.save()
     buffer.seek(0)
@@ -274,22 +320,22 @@ def generate_pdf_certificate_memory(student_name):
 @bot.message_handler(func=lambda msg: msg.text == "🎓 استخراج الشهادة")
 def send_certificate(message):
     student_name = message.from_user.first_name or "Student"
-    msg = bot.reply_to(message, "⏳ **جاري إصدار الشهادة واعتمادها...**", parse_mode="Markdown")
+    msg = bot.reply_to(message, "⏳ **جاري إصدار واعتماد الشهادة...**", parse_mode="Markdown")
     try:
         pdf_buffer = generate_pdf_certificate_memory(student_name)
         bot.send_document(
             message.chat.id,
             document=("FOREX_AMT_Certificate.pdf", pdf_buffer),
-            caption=f"🎓 تهانينا يا **{student_name}**! تم إصدار شهادة التخرج بنجاح.",
+            caption=f"🎓 تهانينا يا **{student_name}**! تم استخراج شهادتك بنجاح.",
             parse_mode="Markdown"
         )
         bot.delete_message(message.chat.id, msg.message_id)
     except Exception as e:
-        logging.error(f"Certificate generation error: {e}")
+        logging.error(f"Certificate error: {e}")
         bot.edit_message_text("❌ حدث خطأ أثناء إنشاء الشهادة.", message.chat.id, msg.message_id)
 
 # ==============================================================================
-# --- 6. عرض إدارة الدروس ---
+# --- 7. عرض مكتبة الدروس مع الصور ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: msg.text == "📚 مكتبة الدروس")
@@ -307,13 +353,13 @@ def show_lessons_list(message):
         
     bot.send_message(
         message.chat.id,
-        "📚 **فهرس الدروس الشاملة (SMC/ICT)**\n─────────────────────────\nاختر الدرس الذي ترغب بقراءته:",
+        "📚 **فهرس الدروس الشاملة (SMC/ICT)**\n─────────────────────────\nاختر الدرس للبدء بالقراءة والشرح التوضيحي:",
         reply_markup=markup,
         parse_mode="Markdown"
     )
 
 # ==============================================================================
-# --- 7. التفاعل مع الأزرار والمشرفين (Callback Queries) ---
+# --- 8. معالجة نقرات الأزرار التفاعلية (Callbacks) ---
 # ==============================================================================
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -324,17 +370,23 @@ def handle_callbacks(call):
     if data.startswith("view_lesson_"):
         lesson_id = data.replace("view_lesson_", "")
         with get_db_connection() as conn:
-            lesson = conn.execute("SELECT title, content FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
+            lesson = conn.execute("SELECT title, content, image_url FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
             
         if lesson:
             bot.answer_callback_query(call.id)
-            text = f"📘 **{lesson['title']}**\n─────────────────────────\n\n{lesson['content']}"
-            bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+            caption = f"📘 **{lesson['title']}**\n─────────────────────────\n\n{lesson['content']}"
+            if lesson['image_url']:
+                try:
+                    bot.send_photo(call.message.chat.id, lesson['image_url'], caption=caption, parse_mode="Markdown")
+                except Exception:
+                    bot.send_message(call.message.chat.id, caption, parse_mode="Markdown")
+            else:
+                bot.send_message(call.message.chat.id, caption, parse_mode="Markdown")
         else:
             bot.answer_callback_query(call.id, "الدرس غير موجود!")
         return
 
-    # شرط حظر استجابة الأزرار لغير الآدمن
+    # التحكم الحصري للآدمن
     if uid not in ADMIN_IDS:
         bot.answer_callback_query(call.id, "🛑 إجراء محظور: للمشرفين فقط.", show_alert=True)
         return
@@ -344,53 +396,30 @@ def handle_callbacks(call):
             users_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
             consult_count = conn.execute("SELECT COUNT(*) FROM consultations").fetchone()[0]
             lessons_count = conn.execute("SELECT COUNT(*) FROM lessons").fetchone()[0]
-            trades_count = conn.execute("SELECT COUNT(*) FROM trades").fetchone()[0]
             
         stats_msg = (
-            f"📊 **تقارير النظام والإحصائيات**\n─────────────────────────\n"
+            f"📊 **تقارير وإحصائيات المنظومة**\n─────────────────────────\n"
             f"👥 **المشتركين:** `{users_count}`\n"
-            f"🎯 **التوصيات المنشورة:** `{trades_count}`\n"
             f"💬 **الاستشارات:** `{consult_count}`\n"
             f"📚 **الدروس المضافة:** `{lessons_count}`"
         )
         bot.answer_callback_query(call.id)
         bot.edit_message_text(stats_msg, call.message.chat.id, call.message.message_id, reply_markup=admin_panel_keyboard(), parse_mode="Markdown")
 
-    elif data == "admin_post_trade":
-        user_states[uid] = "WAITING_TRADE_DETAILS"
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "🎯 **أرسل تفاصيل التوصية للنشر الفوري:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
-
-    elif data == "admin_post_channel":
-        user_states[uid] = "WAITING_ADMIN_CHANNEL_POST"
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "📢 **أرسل المنشور المراد إرساله للقناة الرسمية:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
-
-    elif data == "admin_broadcast":
-        user_states[uid] = "WAITING_ADMIN_BROADCAST"
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "📣 **أرسل نص الإذاعة العامة:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
-
     elif data == "admin_manage_lessons":
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.add(
-            types.InlineKeyboardButton("🤖 توليد درس تلقائي بالذكاء", callback_data="admin_ai_gen_lesson"),
-            types.InlineKeyboardButton("➕ إضافة درس يدوياً", callback_data="admin_add_lesson"),
+            types.InlineKeyboardButton("🤖 توليد درس + شارت توضيحي بالذكاء", callback_data="admin_ai_gen_lesson"),
             types.InlineKeyboardButton("🗑️ حذف درس", callback_data="admin_delete_lesson_list"),
             types.InlineKeyboardButton("🔙 العودة للوحة", callback_data="admin_main")
         )
         bot.answer_callback_query(call.id)
-        bot.edit_message_text("📚 **قسم إدارة الدروس**\nاختر الإجراء المطلوب:", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        bot.edit_message_text("📚 **قسم إدارة وتوليد الدروس**\nاختر الخيار المطلوب:", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
     elif data == "admin_ai_gen_lesson":
         user_states[uid] = "WAITING_AI_LESSON_TOPIC"
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "🤖 **أدخل اسم عنوان الدرس المطلوب توليده ونشره:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
-
-    elif data == "admin_add_lesson":
-        user_states[uid] = "WAITING_LESSON_TITLE"
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "✏️ **أدخل عنوان الدرس:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "🤖 **أدخل اسم عنوان الدرس لتوليد الشرح والشارت التوضيحي تلقائياً:**", reply_markup=back_menu_markup(), parse_mode="Markdown")
 
     elif data == "admin_delete_lesson_list":
         with get_db_connection() as conn:
@@ -425,7 +454,7 @@ def handle_callbacks(call):
         bot.delete_message(call.message.chat.id, call.message.message_id)
 
 # ==============================================================================
-# --- 8. معالجة الردود النصية وتوليد الدروس عبر Groq ---
+# --- 9. توليد الدرس والنصوص + إنشاء الصورة التوضيحية أوتوماتيكياً ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: True, content_types=['text'])
@@ -436,40 +465,49 @@ def handle_text_messages(message):
     if state == "WAITING_AI_LESSON_TOPIC" and uid in ADMIN_IDS:
         topic = message.text
         user_states.pop(uid, None)
-        status_msg = bot.send_message(message.chat.id, f"⚡ **جاري صياغة درس ' {topic} ' بواسطة الذكاء الاصطناعي...**", parse_mode="Markdown")
+        status_msg = bot.send_message(message.chat.id, f"⚡ **جاري كتابة الشرح وتصميم الشارت التوضيحي لموضوع: '{topic}'...**", parse_mode="Markdown")
         
         try:
             prompt = (
-                f"أنت خبير ومدرس تداول الأموال الذكية (SMC & ICT).\n"
-                f"اكتب درساً تعليمياً مختصراً جداً ومباشراً باللغة العربية حول: '{topic}'.\n\n"
+                f"اكتب درساً تعليمياً مقتضباً ومباشراً باللغة العربية حول: '{topic}' في التداول وفق مفاهيم SMC/ICT.\n"
                 f"الشروط:\n"
-                f"1. دخول مباشر في المفاهيم بدون مقدمات طويلة.\n"
-                f"2. الطول مناسب للقراءة على الموبايل (150-200 كلمة).\n"
-                f"3. التنسيق في نقاط محددة واستخدام Markdown."
+                f"1. الدخول المباشر في الشرح بدون مقدمات.\n"
+                f"2. التنسيق في نقاط محددة وإموجي واضحة (150 كلمة).\n"
+                f"3. شروط التداول والتطبيق العملي."
             )
-            # معالجة النصوص عبر Groq
-            response = groq_client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="openai/gpt-oss-120b"
-            )
-            ai_content = response.choices[0].message.content
+            # 1. توليد النص عبر Pollinations AI
+            ai_content = poll_generate_text(prompt)
+            if not ai_content:
+                ai_content = f"درس تعليمي مكثف حول {topic} ومفاهيم السيولة وهيكلية السوق (SMC)."
+
+            # 2. توليد صورة وشارت توضيحي أوتوماتيكياً
+            chart_img_url = poll_generate_chart_image_url(topic)
             lesson_title = f"درس: {topic}"
 
+            # 3. الحفظ في قاعدة البيانات
             with get_db_connection() as conn:
-                conn.execute("INSERT INTO lessons (title, content) VALUES (?, ?)", (lesson_title, ai_content))
+                conn.execute("INSERT INTO lessons (title, content, image_url) VALUES (?, ?, ?)", (lesson_title, ai_content, chart_img_url))
                 conn.commit()
 
+            channel_text = f"🎓 **[درس تعليمي + مثال توضيحي]**\n\n📘 **{lesson_title}**\n\n{ai_content}\n\n---\n📲 تابع المزيد عبر بوت الأكاديمية الرسمية."
+
+            # 4. النشر في القناة الرسمية مع الصورة المصممة تلقائياً
             try:
-                channel_msg = f"🎓 **[درس تعليمي سريع]**\n\n📘 **{lesson_title}**\n\n{ai_content}\n\n---\n📲 اشترك للبقية عبر البوت الرسمي."
-                bot.send_message(OFFICIAL_CHANNEL_ID, channel_msg, parse_mode="Markdown")
+                bot.send_photo(OFFICIAL_CHANNEL_ID, chart_img_url, caption=channel_text, parse_mode="Markdown")
             except Exception as ch_err:
-                logging.error(f"Failed publishing lesson: {ch_err}")
+                logging.error(f"Failed publishing photo to channel: {ch_err}")
+                bot.send_message(OFFICIAL_CHANNEL_ID, channel_text, parse_mode="Markdown")
 
             bot.delete_message(message.chat.id, status_msg.message_id)
-            bot.send_message(message.chat.id, f"✅ **تم نشر الدرس بنجاح!**\n\n📖 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+            
+            # 5. إرسال النتيجة للمشرف مع الشارت التوضيحي
+            try:
+                bot.send_photo(message.chat.id, chart_img_url, caption=f"✅ **تم إنشاء ونشر الدرس والشارت بنجاح!**\n\n📘 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+            except Exception:
+                bot.send_message(message.chat.id, f"✅ **تم نشر الدرس بنجاح!**\n\n📖 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
         except Exception as e:
-            logging.error(f"AI Lesson Generation Error: {e}")
+            logging.error(f"Lesson Gen Error: {e}")
             bot.edit_message_text(f"❌ حدث خطأ:\n`{e}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
         return
 
@@ -492,82 +530,43 @@ def handle_text_messages(message):
             logging.error(f"Failed to send support chat: {e}")
         return
 
-    # الرد الآلي على الأسئلة النصية عبر Groq
-    if groq_client:
-        bot.send_chat_action(message.chat.id, 'typing')
-        try:
-            response = groq_client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": "أنت مساعد خبير لأكاديمية FOREX AMT المتخصص في SMC/ICT. أجب بإيجاز ودقة باللغة العربية."},
-                    {"role": "user", "content": message.text}
-                ],
-                model="openai/gpt-oss-120b"
-            )
-            bot.reply_to(message, response.choices[0].message.content, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
-            return
-        except Exception as e:
-            logging.error(f"Groq API Error: {e}")
-
-    bot.send_message(message.chat.id, "الرجاء اختيار خيار من القائمة أدناه:", reply_markup=main_menu_markup(uid))
+    # الرد الآلي الذكي على استفسارات المستخدم عبر Pollinations AI
+    bot.send_chat_action(message.chat.id, 'typing')
+    ai_reply = poll_generate_text(message.text)
+    if ai_reply:
+        bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+    else:
+        bot.send_message(message.chat.id, "الرجاء اختيار خيار من القائمة أدناه:", reply_markup=main_menu_markup(uid))
 
 # ==============================================================================
-# --- 9. تحليل الصور عبر OpenRouter Vision (مجاني) ---
+# --- 10. تحليل الشارتات بالصور مجاناً بالكامل ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     uid = message.from_user.id
     bot.send_chat_action(message.chat.id, 'typing')
-    status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة مستويات الـ SMC...**", parse_mode="Markdown")
+    status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة المستويات بالذكاء الاصطناعي...**", parse_mode="Markdown")
     
     try:
         file_info = bot.get_file(message.photo[-1].file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        base64_image = base64.b64encode(downloaded_file).decode('utf-8')
+        telegram_image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_info.file_path}"
 
-        prompt_instruction = (
-            "أنت خبير محترف في التداول بمفاهيم الأموال الذكية (SMC Senior Analyst).\n"
-            "قم بتحليل صورة الشارت المرفقة بشكل مختصر ومباشر واذكر:\n"
-            "1. الاتجاه العام وبنية السوق (BOS / CHoCH).\n"
-            "2. مناطق FVG والـ Order Blocks الرئيسية.\n"
-            "3. مناطق السيولة المستهدفة (BSL / SSL).\n"
-            "4. نصيحة سريعة."
-        )
-
-        # استدعاء OpenRouter للصور (مع النموذج المجاني)
-        response = openrouter_client.chat.completions.create(
-            model="google/gemini-2.0-flash-exp:free",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_instruction},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=800
-        )
-        
-        analysis_result = response.choices[0].message.content
+        # استدعاء الرؤية البصرية عبر Pollinations AI
+        analysis_result = poll_analyze_chart_vision(telegram_image_url)
 
         if analysis_result:
             bot.delete_message(message.chat.id, status_msg.message_id)
             bot.reply_to(message, f"📊 **[نتيجة تحليل الشارت الذكي]**\n─────────────────────────\n\n{analysis_result}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         else:
-            bot.edit_message_text("❌ تعذر تحليل الصورة، حاول مجدداً.", message.chat.id, status_msg.message_id)
+            bot.edit_message_text("❌ تعذر تحليل الصورة حالياً، حاول مجدداً.", message.chat.id, status_msg.message_id)
 
     except Exception as e:
         logging.error(f"Vision Processing Error: {e}")
         bot.edit_message_text(f"❌ حدث خطأ أثناء معالجة الصورة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 10. تشغيل البوت والسيرفر ---
+# --- 11. تشغيل خيط البوت والسيرفر ---
 # ==============================================================================
 
 def run_bot():
