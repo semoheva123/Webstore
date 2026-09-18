@@ -24,7 +24,7 @@ def home():
 # المفاتيح والمعرفات المباشرة
 BOT_TOKEN = "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E"
 GROQ_API_KEY = "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"
-OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"  # ضع مفتاح OpenAI الخاص بك هنا
+OPENAI_API_KEY = "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"  # ضع مفتاح OpenAI الخاص بك هنا
 
 OFFICIAL_CHANNEL_ID = -1004363402118  # القناة العامة للتوصيات
 SUPPORT_CHAT_ID = -1004488517670      # قناة/مجموعة الدعم والاستشارات
