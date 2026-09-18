@@ -20,7 +20,7 @@ app = Flask(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
 SUPPORT_CHAT_ID = int(os.getenv("SUPPORT_CHAT_ID", "-1004488517670"))
-ADMIN_IDS = [966607076]  # معرفات المشرفين المعتمدين
+ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
