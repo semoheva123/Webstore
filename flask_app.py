@@ -261,7 +261,7 @@ def handle_text_messages(message):
     bot.send_message(message.chat.id, "الرجاء اختيار أحد الخيارات من القائمة أدناه:", reply_markup=main_menu_markup())
 
 # ==============================================================================
-# --- 7. تحليل الصور (Groq Vision) ---
+# --- 7. تحليل الصور (Groq Vision مع حماية معالجة الأخطاء) ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -284,33 +284,45 @@ def handle_photo(message):
             "4. نصيحة تعليمية موجزة."
         )
 
-        response = groq_client.chat.completions.create(
-            model="llama-3.2-11b-vision-instruct",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_instruction},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=800
-        )
-        
-        analysis_result = response.choices[0].message.content
+        vision_models = ["llama-3.2-11b-vision-instruct", "llama-3.2-90b-vision-instruct"]
+        analysis_result = None
+        last_error = ""
 
-        bot.delete_message(message.chat.id, status_msg.message_id)
-        bot.reply_to(message, f"🎯 **[نتيجة تحليل الشارت الذكي]**\n\n{analysis_result}", reply_markup=main_menu_markup(), parse_mode="Markdown")
+        for model_name in vision_models:
+            try:
+                response = groq_client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt_instruction},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens=800
+                )
+                analysis_result = response.choices[0].message.content
+                break
+            except Exception as err:
+                last_error = str(err)
+                continue
+
+        if analysis_result:
+            bot.delete_message(message.chat.id, status_msg.message_id)
+            bot.reply_to(message, f"🎯 **[نتيجة تحليل الشارت الذكي]**\n\n{analysis_result}", reply_markup=main_menu_markup(), parse_mode="Markdown")
+        else:
+            bot.edit_message_text(f"❌ تعذر التحليل عبر Groq:\n`{last_error}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
     except Exception as e:
         logging.error(f"Vision Processing Error: {e}")
-        bot.edit_message_text("❌ حدث خطأ أثناء معالجة صورة الشارت.", message.chat.id, status_msg.message_id)
+        bot.edit_message_text(f"❌ حدث خطأ أثناء المعالجة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
     try:
         caption = f"📸 **شارت جديد للتحليل** من: {message.from_user.first_name} (`{uid}`)"
