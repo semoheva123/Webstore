@@ -16,18 +16,16 @@ from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "FOREX AMT Bot is Running Smoothly with Webhook! 🚀"
-
+# المتغيرات الأساسية والمعرفات
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
-OFFICIAL_CHANNEL_ID = -1004363402118
-SUPPORT_CHAT_ID = -1004488517670
-ADMIN_IDS = [966607076]  # معرفات المشرفين المعتمدين فقط
+OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
+SUPPORT_CHAT_ID = int(os.getenv("SUPPORT_CHAT_ID", "-1004488517670"))
+ADMIN_IDS = [966607076]  # معرفات المشرفين المعتمدين
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-bot = telebot.TeleBot(BOT_TOKEN)
+# تهيئة البوت بوضع غير متزامن متوافق مع Webhook
+bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 
 # ضبط قائمة أوامر البوت تلقائياً في التليجرام
 try:
@@ -60,13 +58,12 @@ def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومد�
             return res.text
     except Exception as e:
         logging.error(f"Pollinations Text Error: {e}")
-    return None
+    return "عذراً، حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي."
 
 def poll_generate_chart_image_url(topic):
     """توليد رابط صورة/شارت توضيحي تعليمي عبر Pollinations Image API"""
     clean_topic = urllib.parse.quote(f"Educational forex trading chart diagram illustrating {topic}, Smart Money Concepts, SMC, ICT order block liquidity, clean financial graphic, high resolution")
-    image_url = f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
-    return image_url
+    return f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
 
 def poll_analyze_chart_vision(image_url):
     """تحليل صورة الشارت المرفوعة باستخدام رؤية Pollinations AI"""
@@ -144,7 +141,7 @@ def init_db():
 init_db()
 
 # ==============================================================================
-# --- 4. تصميم واجهة أزرار التليجرام الاحترافية ---
+# --- 4. تصميم واجهات القوائم والأزرار ---
 # ==============================================================================
 
 def main_menu_markup(user_id):
@@ -174,11 +171,10 @@ def admin_panel_keyboard():
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_stats = types.InlineKeyboardButton("📊 إحصائيات النظام", callback_data="admin_stats")
     btn_lessons = types.InlineKeyboardButton("📚 إدارة وتوليد الدروس", callback_data="admin_manage_lessons")
-    btn_broadcast = types.InlineKeyboardButton("📣 إذاعة للأعضاء", callback_data="admin_broadcast")
     btn_close = types.InlineKeyboardButton("❌ إغلاق اللوحة", callback_data="admin_close")
     
     markup.add(btn_lessons, btn_stats)
-    markup.add(btn_broadcast, btn_close)
+    markup.add(btn_close)
     return markup
 
 # ==============================================================================
@@ -451,7 +447,7 @@ def handle_callbacks(call):
         bot.delete_message(call.message.chat.id, call.message.message_id)
 
 # ==============================================================================
-# --- 9. توليد الدرس والنصوص + إنشاء الصورة التوضيحية أوتوماتيكياً ---
+# --- 9. معالجة الرسائل النصية المباشرة والذكاء الاصطناعي ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: True, content_types=['text'])
@@ -459,6 +455,7 @@ def handle_text_messages(message):
     uid = message.from_user.id
     state = user_states.get(uid)
 
+    # حالة إضافة درس جديد من الأدمن عبر الذكاء الاصطناعي
     if state == "WAITING_AI_LESSON_TOPIC" and uid in ADMIN_IDS:
         topic = message.text
         user_states.pop(uid, None)
@@ -469,13 +466,10 @@ def handle_text_messages(message):
                 f"اكتب درساً تعليمياً مقتضباً ومباشراً باللغة العربية حول: '{topic}' في التداول وفق مفاهيم SMC/ICT.\n"
                 f"الشروط:\n"
                 f"1. الدخول المباشر في الشرح بدون مقدمات.\n"
-                f"2. التنسيق في نقاط محددة وإموجي واضحة (150 كلمة).\n"
+                f"2. التنسيق في نقاط محددة وإموجي واضحة.\n"
                 f"3. شروط التداول والتطبيق العملي."
             )
             ai_content = poll_generate_text(prompt)
-            if not ai_content:
-                ai_content = f"درس تعليمي مكثف حول {topic} ومفاهيم السيولة وهيكلية السوق (SMC)."
-
             chart_img_url = poll_generate_chart_image_url(topic)
             lesson_title = f"درس: {topic}"
 
@@ -489,12 +483,11 @@ def handle_text_messages(message):
                 bot.send_photo(OFFICIAL_CHANNEL_ID, chart_img_url, caption=channel_text, parse_mode="Markdown")
             except Exception as ch_err:
                 logging.error(f"Failed publishing photo to channel: {ch_err}")
-                bot.send_message(OFFICIAL_CHANNEL_ID, channel_text, parse_mode="Markdown")
 
             bot.delete_message(message.chat.id, status_msg.message_id)
             
             try:
-                bot.send_photo(message.chat.id, chart_img_url, caption=f"✅ **تم إنشاء ونشر الدرس والشارت بنجاح!**\n\n📘 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+                bot.send_photo(message.chat.id, chart_img_url, caption=f"✅ **تم إنشاء ونشر الدرس بنجاح!**\n\n📘 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
             except Exception:
                 bot.send_message(message.chat.id, f"✅ **تم نشر الدرس بنجاح!**\n\n📖 **{lesson_title}**\n\n{ai_content}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
@@ -503,6 +496,7 @@ def handle_text_messages(message):
             bot.edit_message_text(f"❌ حدث خطأ:\n`{e}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
         return
 
+    # حالة استقبال الاستشارات
     elif state == "WAITING_CONSULTATION":
         user_states.pop(uid, None)
         consult_text = message.text
@@ -522,15 +516,13 @@ def handle_text_messages(message):
             logging.error(f"Failed to send support chat: {e}")
         return
 
+    # الرد التلقائي بالذكاء الاصطناعي لأي رسالة عادية
     bot.send_chat_action(message.chat.id, 'typing')
     ai_reply = poll_generate_text(message.text)
-    if ai_reply:
-        bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
-    else:
-        bot.send_message(message.chat.id, "الرجاء اختيار خيار من القائمة أدناه:", reply_markup=main_menu_markup(uid))
+    bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
 # ==============================================================================
-# --- 10. تحليل الشارتات بالصور مجاناً بالكامل ---
+# --- 10. تحليل الشارتات عند إرسال صورة ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -556,33 +548,40 @@ def handle_photo(message):
         bot.edit_message_text(f"❌ حدث خطأ أثناء معالجة الصورة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 11. إعداد الويب هوك والتشغيل عبر Web Server (Webhook Mode) ---
+# --- 11. مسار الـ Webhook الخاص بـ Flask للعمل على Render ---
 # ==============================================================================
 
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 
+@app.route('/')
+def home():
+    return "FOREX AMT Bot is Running Smoothly with Webhook! 🚀"
+
 @app.route(WEBHOOK_PATH, methods=['POST'])
 def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return '', 200
-    else:
-        return '', 403
+    try:
+        json_data = request.get_json(force=True)
+        if json_data:
+            update = telebot.types.Update.de_json(json_data)
+            bot.process_new_updates([update])
+    except Exception as e:
+        logging.error(f"Error processing update: {e}")
+    
+    # الرد الفوري المباشر بـ 200 لتفادي مشكلة Timeout مع تليجرام
+    return "OK", 200
 
-def setup_webhook():
+def set_render_webhook():
     render_url = os.getenv("RENDER_EXTERNAL_URL")
     if render_url:
         webhook_url = f"{render_url}{WEBHOOK_PATH}"
         try:
             bot.remove_webhook()
             bot.set_webhook(url=webhook_url)
-            logging.info(f"Webhook successfully set to: {webhook_url}")
+            logging.info(f"Webhook set successfully to: {webhook_url}")
         except Exception as e:
-            logging.error(f"Failed to set webhook: {e}")
+            logging.error(f"Failed to set webhook automatically: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
 else:
-    setup_webhook()
+    set_render_webhook()
