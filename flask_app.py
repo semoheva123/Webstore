@@ -1,7 +1,9 @@
 import io
 import os
+import re
 import logging
 import sqlite3
+import base64
 import urllib.parse
 import requests
 import telebot
@@ -19,8 +21,7 @@ app = Flask(__name__)
 # المتغيرات الأساسية والمعرفات
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
-SUPPORT_CHAT_ID = int(os.getenv("SUPPORT_CHAT_ID", "-1004488517670"))
-ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
+ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين فقط الذين ستصلهم الرسائل
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -39,7 +40,7 @@ except Exception as cmd_err:
 user_states = {}
 
 # ==============================================================================
-# --- 2. دمج خدمات Pollinations AI (نصوص + صور + رؤية) ---
+# --- 2. دمج خدمات Pollinations AI (المحدثة - نصوص + صور + رؤية Base64) ---
 # ==============================================================================
 
 def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومدرس SMC/ICT في أكاديمية FOREX AMT."):
@@ -52,21 +53,22 @@ def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومد�
         ],
         "model": "openai"
     }
+    headers = {"Content-Type": "application/json"}
     try:
-        res = requests.post(url, json=payload, timeout=45)
-        if res.status_code == 200:
+        res = requests.post(url, json=payload, headers=headers, timeout=25)
+        if res.status_code == 200 and res.text.strip():
             return res.text
     except Exception as e:
         logging.error(f"Pollinations Text Error: {e}")
-    return "عذراً، حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي."
+    return "عذراً، خادم الذكاء الاصطناعي مشغول حالياً. يرجى إعادة إرسال سؤالك."
 
 def poll_generate_chart_image_url(topic):
     """توليد رابط صورة/شارت توضيحي تعليمي عبر Pollinations Image API"""
     clean_topic = urllib.parse.quote(f"Educational forex trading chart diagram illustrating {topic}, Smart Money Concepts, SMC, ICT order block liquidity, clean financial graphic, high resolution")
     return f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
 
-def poll_analyze_chart_vision(image_url):
-    """تحليل صورة الشارت المرفوعة باستخدام رؤية Pollinations AI"""
+def poll_analyze_chart_vision(image_base64):
+    """تحليل صورة الشارت باستخدام Base64 لضمان وصول الصورة للذكاء الاصطناعي دون الاعتماد على روابط خارجية"""
     url = "https://text.pollinations.ai/"
     prompt_instruction = (
         "أنت خبير محترف في التداول بمفاهيم الأموال الذكية (SMC Senior Analyst).\n"
@@ -82,15 +84,21 @@ def poll_analyze_chart_vision(image_url):
                 "role": "user",
                 "content": [
                     {"type": "text", "text": prompt_instruction},
-                    {"type": "image_url", "image_url": {"url": image_url}}
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
+                    }
                 ]
             }
         ],
         "model": "openai"
     }
+    headers = {"Content-Type": "application/json"}
     try:
-        res = requests.post(url, json=payload, timeout=60)
-        if res.status_code == 200:
+        res = requests.post(url, json=payload, headers=headers, timeout=35)
+        if res.status_code == 200 and res.text.strip():
             return res.text
     except Exception as e:
         logging.error(f"Pollinations Vision Error: {e}")
@@ -447,7 +455,34 @@ def handle_callbacks(call):
         bot.delete_message(call.message.chat.id, call.message.message_id)
 
 # ==============================================================================
-# --- 9. معالجة الرسائل النصية المباشرة والذكاء الاصطناعي ---
+# --- 9. معالجة رد الأدمن مباشرة على الاستشارات (Reply System) ---
+# ==============================================================================
+
+@bot.message_handler(func=lambda msg: msg.reply_to_message is not None)
+def handle_admin_reply(message):
+    uid = message.from_user.id
+    
+    # التأكد أن الذي يرد هو أحد الأدمنية المعتمدين حصراً
+    if uid in ADMIN_IDS:
+        replied_text = message.reply_to_message.text or message.reply_to_message.caption or ""
+        
+        # استخراج ID المستخدم الأصلي من النص
+        match = re.search(r"معرف المستخدم:\s*`?(\d+)`?", replied_text)
+        if match:
+            target_user_id = int(match.group(1))
+            user_reply_text = f"💬 **وصلك رد من فريق الدعم والإدارة:**\n\n{message.text}"
+            
+            try:
+                bot.send_message(target_user_id, user_reply_text, parse_mode="Markdown")
+                bot.reply_to(message, "✅ **تم إرسال ردك للمستخدم بنجاح.**")
+            except Exception as e:
+                logging.error(f"Failed to deliver admin reply to user {target_user_id}: {e}")
+                bot.reply_to(message, f"❌ تعذر إرسال الرد للمستخدم (ربما قام بحظر البوت):\n`{e}`", parse_mode="Markdown")
+        else:
+            bot.reply_to(message, "⚠️ لم يتم العثور على معرف المستخدم في الرسالة الأصلية.")
+
+# ==============================================================================
+# --- 10. معالجة الرسائل النصية المباشرة والذكاء الاصطناعي ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: True, content_types=['text'])
@@ -496,24 +531,36 @@ def handle_text_messages(message):
             bot.edit_message_text(f"❌ حدث خطأ:\n`{e}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
         return
 
-    # حالة استقبال الاستشارات
+    # حالة استقبال الاستشارات وإرسالها للأدمنية المعتمدين حصراً في الخاص
     elif state == "WAITING_CONSULTATION":
         user_states.pop(uid, None)
         consult_text = message.text
         name = message.from_user.first_name or "المستخدم"
         username = f"@{message.from_user.username}" if message.from_user.username else "بدون معرف"
         
+        # حفظ الاستشارة في قاعدة البيانات
         with get_db_connection() as conn:
             conn.execute("INSERT INTO consultations (user_id, full_name, message) VALUES (?, ?, ?)", (uid, name, consult_text))
             conn.commit()
             
-        bot.reply_to(message, "✅ **تم إرسال استفسارك إلى فريق الدعم بنجاح.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+        bot.reply_to(message, "✅ **تم إرسال استفسارك إلى فريق الدعم بنجاح وسنتواصل معك قريباً.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         
-        support_msg = f"📥 **استشارة جديدة**\n👤 {name} (`{uid}`)\n🔗 {username}\n\n💬 {consult_text}"
-        try:
-            bot.send_message(SUPPORT_CHAT_ID, support_msg, parse_mode="Markdown")
-        except Exception as e:
-            logging.error(f"Failed to send support chat: {e}")
+        # قالب الرسالة الموجه للأدمنية
+        support_msg = (
+            f"📥 **استشارة جديدة**\n"
+            f"👤 **الاسم:** {name}\n"
+            f"🔗 **المعرف:** {username}\n"
+            f"🆔 **معرف المستخدم:** `{uid}`\n\n"
+            f"💬 **نص الرسالة:**\n{consult_text}\n\n"
+            f"💡 *للرد على هذا الشخص، اعمل (Reply / رد) على هذه الرسالة واكتب ردك مباشرة.*"
+        )
+        
+        # إرسال الرسالة إلى الخاص لدى الأدمنية المحددين فقط في ADMIN_IDS
+        for admin_id in ADMIN_IDS:
+            try:
+                bot.send_message(admin_id, support_msg, parse_mode="Markdown")
+            except Exception as e:
+                logging.error(f"Failed to send support msg to admin {admin_id}: {e}")
         return
 
     # الرد التلقائي بالذكاء الاصطناعي لأي رسالة عادية
@@ -522,7 +569,7 @@ def handle_text_messages(message):
     bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
 # ==============================================================================
-# --- 10. تحليل الشارتات عند إرسال صورة ---
+# --- 11. تحليل الشارتات عند إرسال صورة (معالجة تحميل الصورة كـ Base64) ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -532,23 +579,28 @@ def handle_photo(message):
     status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة المستويات بالذكاء الاصطناعي...**", parse_mode="Markdown")
     
     try:
+        # 1. تنزيل ملف الصورة مباشرة من سيرفر تليجرام إلى الذاكرة
         file_info = bot.get_file(message.photo[-1].file_id)
-        telegram_image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_info.file_path}"
+        downloaded_file = bot.download_file(file_info.file_path)
+        
+        # 2. تحويل الصورة إلى نص Base64 لضمان قراءتها بأمان من خادم الذكاء الاصطناعي
+        image_base64 = base64.b64encode(downloaded_file).decode('utf-8')
 
-        analysis_result = poll_analyze_chart_vision(telegram_image_url)
+        # 3. إرسال الصورة المحولة للذكاء الاصطناعي
+        analysis_result = poll_analyze_chart_vision(image_base64)
 
         if analysis_result:
             bot.delete_message(message.chat.id, status_msg.message_id)
             bot.reply_to(message, f"📊 **[نتيجة تحليل الشارت الذكي]**\n─────────────────────────\n\n{analysis_result}", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         else:
-            bot.edit_message_text("❌ تعذر تحليل الصورة حالياً، حاول مجدداً.", message.chat.id, status_msg.message_id)
+            bot.edit_message_text("❌ تعذر تحليل الشارت حالياً، يرجى إعادة محاولة إرسال الصورة.", message.chat.id, status_msg.message_id)
 
     except Exception as e:
         logging.error(f"Vision Processing Error: {e}")
         bot.edit_message_text(f"❌ حدث خطأ أثناء معالجة الصورة:\n`{str(e)}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
 
 # ==============================================================================
-# --- 11. مسار الـ Webhook الخاص بـ Flask للعمل على Render ---
+# --- 12. مسار الـ Webhook الخاص بـ Flask للعمل على Render ---
 # ==============================================================================
 
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
@@ -567,7 +619,6 @@ def webhook():
     except Exception as e:
         logging.error(f"Error processing update: {e}")
     
-    # الرد الفوري المباشر بـ 200 لتفادي مشكلة Timeout مع تليجرام
     return "OK", 200
 
 def set_render_webhook():
