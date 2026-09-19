@@ -21,7 +21,7 @@ app = Flask(__name__)
 # المتغيرات الأساسية والمعرفات
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
-ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين فقط الذين ستصلهم الرسائل
+ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -40,7 +40,7 @@ except Exception as cmd_err:
 user_states = {}
 
 # ==============================================================================
-# --- 2. دمج خدمات Pollinations AI (المحدثة - نصوص + صور + رؤية Base64) ---
+# --- 2. دمج خدمات Pollinations AI (نصوص + صور + رؤية Base64) ---
 # ==============================================================================
 
 def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومدرس SMC/ICT في أكاديمية FOREX AMT."):
@@ -63,12 +63,12 @@ def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومد�
     return "عذراً، خادم الذكاء الاصطناعي مشغول حالياً. يرجى إعادة إرسال سؤالك."
 
 def poll_generate_chart_image_url(topic):
-    """توليد رابط صورة/شارت توضيحي تعليمي عبر Pollinations Image API"""
+    """توليد رابط صورة/شارت توضيحي تعليمي"""
     clean_topic = urllib.parse.quote(f"Educational forex trading chart diagram illustrating {topic}, Smart Money Concepts, SMC, ICT order block liquidity, clean financial graphic, high resolution")
     return f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
 
 def poll_analyze_chart_vision(image_base64):
-    """تحليل صورة الشارت باستخدام Base64 لضمان وصول الصورة للذكاء الاصطناعي دون الاعتماد على روابط خارجية"""
+    """تحليل صورة الشارت باستخدام Base64 لضمان قراءة الصورة بالذكاء الاصطناعي"""
     url = "https://text.pollinations.ai/"
     prompt_instruction = (
         "أنت خبير محترف في التداول بمفاهيم الأموال الذكية (SMC Senior Analyst).\n"
@@ -531,7 +531,7 @@ def handle_text_messages(message):
             bot.edit_message_text(f"❌ حدث خطأ:\n`{e}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
         return
 
-    # حالة استقبال الاستشارات وإرسالها للأدمنية المعتمدين حصراً في الخاص
+    # حالة استقبال الاستشارات وإرسالها للأدمنية
     elif state == "WAITING_CONSULTATION":
         user_states.pop(uid, None)
         consult_text = message.text
@@ -543,24 +543,28 @@ def handle_text_messages(message):
             conn.execute("INSERT INTO consultations (user_id, full_name, message) VALUES (?, ?, ?)", (uid, name, consult_text))
             conn.commit()
             
-        bot.reply_to(message, "✅ **تم إرسال استفسارك إلى فريق الدعم بنجاح وسنتواصل معك قريباً.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
-        
-        # قالب الرسالة الموجه للأدمنية
+        # بناء الرسالة بدون parse_mode لتفادي مشاكل الأرموز والرموز الخاصة
         support_msg = (
-            f"📥 **استشارة جديدة**\n"
-            f"👤 **الاسم:** {name}\n"
-            f"🔗 **المعرف:** {username}\n"
-            f"🆔 **معرف المستخدم:** `{uid}`\n\n"
-            f"💬 **نص الرسالة:**\n{consult_text}\n\n"
-            f"💡 *للرد على هذا الشخص، اعمل (Reply / رد) على هذه الرسالة واكتب ردك مباشرة.*"
+            f"📥 استشارة جديدة\n"
+            f"👤 الاسم: {name}\n"
+            f"🔗 المعرف: {username}\n"
+            f"🆔 معرف المستخدم: {uid}\n\n"
+            f"💬 نص الرسالة:\n{consult_text}\n\n"
+            f"💡 للرد على هذا الشخص، اعمل (Reply / رد) على هذه الرسالة واكتب ردك مباشرة."
         )
         
-        # إرسال الرسالة إلى الخاص لدى الأدمنية المحددين فقط في ADMIN_IDS
+        sent_success = False
         for admin_id in ADMIN_IDS:
             try:
-                bot.send_message(admin_id, support_msg, parse_mode="Markdown")
+                bot.send_message(admin_id, support_msg)
+                sent_success = True
             except Exception as e:
                 logging.error(f"Failed to send support msg to admin {admin_id}: {e}")
+        
+        if sent_success:
+            bot.reply_to(message, "✅ **تم إرسال استفسارك إلى فريق الدعم بنجاح وسنتواصل معك قريباً.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
+        else:
+            bot.reply_to(message, "❌ **تعذر وصول الرسالة للإدارة. يرجى تأكد الأدمن من فتح البوت والضغط على /start.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         return
 
     # الرد التلقائي بالذكاء الاصطناعي لأي رسالة عادية
@@ -569,7 +573,7 @@ def handle_text_messages(message):
     bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
 
 # ==============================================================================
-# --- 11. تحليل الشارتات عند إرسال صورة (معالجة تحميل الصورة كـ Base64) ---
+# --- 11. تحليل الشارتات عند إرسال صورة (تحويل الصورة لـ Base64) ---
 # ==============================================================================
 
 @bot.message_handler(content_types=['photo'])
@@ -579,11 +583,11 @@ def handle_photo(message):
     status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة المستويات بالذكاء الاصطناعي...**", parse_mode="Markdown")
     
     try:
-        # 1. تنزيل ملف الصورة مباشرة من سيرفر تليجرام إلى الذاكرة
+        # 1. تنزيل ملف الصورة من سيرفر تليجرام إلى الذاكرة
         file_info = bot.get_file(message.photo[-1].file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         
-        # 2. تحويل الصورة إلى نص Base64 لضمان قراءتها بأمان من خادم الذكاء الاصطناعي
+        # 2. تحويل الصورة إلى Base64
         image_base64 = base64.b64encode(downloaded_file).decode('utf-8')
 
         # 3. إرسال الصورة المحولة للذكاء الاصطناعي
