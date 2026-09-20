@@ -18,8 +18,8 @@ from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 
-# المتغيرات الأساسية والمعرفات (تم تحديث التوكن هنا)
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAFkgjpvbnTdcy4NmLN8qUbmVZ5pKl6jZNI")
+# قراءة التوكن بأمان من متغيرات البيئة الخاصة بالسيرفر
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
 ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
 
