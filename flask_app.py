@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 
-# قراءة التوكن بأمان من متغيرات البيئة وتنظيفه من المسافات المخفية تلقائياً
+# قراءة التوكن بأمان وتنظيفه آلياً من أي مسافات زائدة
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
 ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
@@ -32,7 +32,7 @@ bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 try:
     bot.set_my_commands([
         telebot.types.BotCommand("start", "🏠 القائمة الرئيسية والبدء"),
-        telebot.types.BotCommand("admin", "👑 لوحة التحكم (للمشرفين فقط)")
+        telebot.types.BotCommand("admin", "👑 لوحة التحكم (ل للمشرفين فقط)")
     ])
 except Exception as cmd_err:
     logging.warning(f"Failed to set bot commands: {cmd_err}")
@@ -40,26 +40,39 @@ except Exception as cmd_err:
 user_states = {}
 
 # ==============================================================================
-# --- 2. دمج خدمات Pollinations AI (نصوص + صور + رؤية Base64) ---
+# --- 2. دمج خدمات Pollinations AI (مجاني بالكامل وبدون رصيد) ---
 # ==============================================================================
 
 def poll_generate_text(prompt, system_prompt="أنت خبير تداول ومدرس SMC/ICT في أكاديمية FOREX AMT."):
-    """توليد الردود والنصوص المجانية عبر Pollinations AI"""
+    """توليد الردود والنصوص مجاناً دون الحاجة لرصيد أو API Key"""
     url = "https://text.pollinations.ai/"
     payload = {
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "model": "openai"
+        "model": "mistral"
     }
     headers = {"Content-Type": "application/json"}
+    
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=25)
         if res.status_code == 200 and res.text.strip():
-            return res.text
+            if "doesn't have enough credits" not in res.text:
+                return res.text
     except Exception as e:
         logging.error(f"Pollinations Text Error: {e}")
+
+    # طريقة احتياطية مضمونة عبر GET Request في حال تعثر الطلب الأول
+    try:
+        encoded_prompt = urllib.parse.quote(f"{system_prompt}\nالسؤال: {prompt}")
+        fallback_url = f"https://text.pollinations.ai/{encoded_prompt}?model=mistral"
+        res_fallback = requests.get(fallback_url, timeout=25)
+        if res_fallback.status_code == 200 and res_fallback.text.strip():
+            return res_fallback.text
+    except Exception as e:
+        logging.error(f"Fallback Text Error: {e}")
+
     return "عذراً، خادم الذكاء الاصطناعي مشغول حالياً. يرجى إعادة إرسال سؤالك."
 
 def poll_generate_chart_image_url(topic):
@@ -68,7 +81,7 @@ def poll_generate_chart_image_url(topic):
     return f"https://image.pollinations.ai/prompt/{clean_topic}?width=1024&height=768&nologo=true&seed=42"
 
 def poll_analyze_chart_vision(image_base64):
-    """تحليل صورة الشارت باستخدام Base64 لضمان قراءة الصورة بالذكاء الاصطناعي"""
+    """تحليل صورة الشارت باستخدام Base64"""
     url = "https://text.pollinations.ai/"
     prompt_instruction = (
         "أنت خبير محترف في التداول بمفاهيم الأموال الذكية (SMC Senior Analyst).\n"
@@ -93,13 +106,14 @@ def poll_analyze_chart_vision(image_base64):
                 ]
             }
         ],
-        "model": "openai"
+        "model": "mistral"
     }
     headers = {"Content-Type": "application/json"}
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=35)
         if res.status_code == 200 and res.text.strip():
-            return res.text
+            if "doesn't have enough credits" not in res.text:
+                return res.text
     except Exception as e:
         logging.error(f"Pollinations Vision Error: {e}")
     return None
@@ -480,7 +494,7 @@ def handle_admin_reply(message):
             bot.reply_to(message, "⚠️ لم يتم العثور على معرف المستخدم في الرسالة الأصلية.")
 
 # ==============================================================================
-# --- 10. معالجة الرسائل النصية المباشرة والذكاء الاصطناعي ---
+# --- 10. معالجة الرسائل النصية والذكاء الاصطناعي (مع تقييد المجموعات) ---
 # ==============================================================================
 
 @bot.message_handler(func=lambda msg: True, content_types=['text'])
@@ -488,6 +502,7 @@ def handle_text_messages(message):
     uid = message.from_user.id
     state = user_states.get(uid)
 
+    # 1. معالجة حالات الإدارة والاستشارات
     if state == "WAITING_AI_LESSON_TOPIC" and uid in ADMIN_IDS:
         topic = message.text
         user_states.pop(uid, None)
@@ -561,6 +576,20 @@ def handle_text_messages(message):
             bot.reply_to(message, "❌ **تعذر وصول الرسالة للإدارة. يرجى تأكد الأدمن من فتح البوت والضغط على /start.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         return
 
+    # 🛑 فحص المجموعات: الرد فقط عند المنشن (@) أو الرد المباشر (Reply) على رسالة البوت
+    if message.chat.type != 'private':
+        bot_info = bot.get_me()
+        bot_username = f"@{bot_info.username}".lower() if bot_info.username else ""
+        
+        is_mentioned = bot_username in message.text.lower() if bot_username else False
+        is_replied = (message.reply_to_message and 
+                      message.reply_to_message.from_user and 
+                      message.reply_to_message.from_user.id == bot_info.id)
+        
+        if not (is_mentioned or is_replied):
+            return
+
+    # 2. توليد الرد بالذكاء الاصطناعي
     bot.send_chat_action(message.chat.id, 'typing')
     ai_reply = poll_generate_text(message.text)
     bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
