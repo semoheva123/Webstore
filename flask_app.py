@@ -18,8 +18,8 @@ from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 
-# المتغيرات الأساسية والمعرفات
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAGu7PJPpqpCxGSHvd1pq5hIE9w1K42YS0E")
+# المتغيرات الأساسية والمعرفات (تم تحديث التوكن هنا)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8616578192:AAFkgjpvbnTdcy4NmLN8qUbmVZ5pKl6jZNI")
 OFFICIAL_CHANNEL_ID = int(os.getenv("OFFICIAL_CHANNEL_ID", "-1004363402118"))
 ADMIN_IDS = [966607076, 688331791]  # معرفات المشرفين المعتمدين
 
@@ -462,11 +462,9 @@ def handle_callbacks(call):
 def handle_admin_reply(message):
     uid = message.from_user.id
     
-    # التأكد أن الذي يرد هو أحد الأدمنية المعتمدين حصراً
     if uid in ADMIN_IDS:
         replied_text = message.reply_to_message.text or message.reply_to_message.caption or ""
         
-        # استخراج ID المستخدم الأصلي من النص
         match = re.search(r"معرف المستخدم:\s*`?(\d+)`?", replied_text)
         if match:
             target_user_id = int(match.group(1))
@@ -490,7 +488,6 @@ def handle_text_messages(message):
     uid = message.from_user.id
     state = user_states.get(uid)
 
-    # حالة إضافة درس جديد من الأدمن عبر الذكاء الاصطناعي
     if state == "WAITING_AI_LESSON_TOPIC" and uid in ADMIN_IDS:
         topic = message.text
         user_states.pop(uid, None)
@@ -531,19 +528,16 @@ def handle_text_messages(message):
             bot.edit_message_text(f"❌ حدث خطأ:\n`{e}`", message.chat.id, status_msg.message_id, parse_mode="Markdown")
         return
 
-    # حالة استقبال الاستشارات وإرسالها للأدمنية
     elif state == "WAITING_CONSULTATION":
         user_states.pop(uid, None)
         consult_text = message.text
         name = message.from_user.first_name or "المستخدم"
         username = f"@{message.from_user.username}" if message.from_user.username else "بدون معرف"
         
-        # حفظ الاستشارة في قاعدة البيانات
         with get_db_connection() as conn:
             conn.execute("INSERT INTO consultations (user_id, full_name, message) VALUES (?, ?, ?)", (uid, name, consult_text))
             conn.commit()
             
-        # بناء الرسالة بدون parse_mode لتفادي مشاكل الأرموز والرموز الخاصة
         support_msg = (
             f"📥 استشارة جديدة\n"
             f"👤 الاسم: {name}\n"
@@ -567,7 +561,6 @@ def handle_text_messages(message):
             bot.reply_to(message, "❌ **تعذر وصول الرسالة للإدارة. يرجى تأكد الأدمن من فتح البوت والضغط على /start.**", reply_markup=main_menu_markup(uid), parse_mode="Markdown")
         return
 
-    # الرد التلقائي بالذكاء الاصطناعي لأي رسالة عادية
     bot.send_chat_action(message.chat.id, 'typing')
     ai_reply = poll_generate_text(message.text)
     bot.reply_to(message, ai_reply, reply_markup=main_menu_markup(uid), parse_mode="Markdown")
@@ -583,14 +576,10 @@ def handle_photo(message):
     status_msg = bot.reply_to(message, "⏳ **جاري تحليل الشارت وقراءة المستويات بالذكاء الاصطناعي...**", parse_mode="Markdown")
     
     try:
-        # 1. تنزيل ملف الصورة من سيرفر تليجرام إلى الذاكرة
         file_info = bot.get_file(message.photo[-1].file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         
-        # 2. تحويل الصورة إلى Base64
         image_base64 = base64.b64encode(downloaded_file).decode('utf-8')
-
-        # 3. إرسال الصورة المحولة للذكاء الاصطناعي
         analysis_result = poll_analyze_chart_vision(image_base64)
 
         if analysis_result:
